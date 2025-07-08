@@ -7,7 +7,8 @@ import {
 import {
   Menu as MenuIcon, Dashboard as DashboardIcon, People as PeopleIcon,
   Receipt as ReceiptIcon, Payment as PaymentIcon, Person as PersonIcon,
-  Analytics as AnalyticsIcon, Water as WaterIcon, Notifications as NotificationsIcon
+  Analytics as AnalyticsIcon, Water as WaterIcon, Notifications as NotificationsIcon,
+  Logout as LogoutIcon
 } from '@mui/icons-material';
 import { styled } from '@mui/system';
 import { supabase } from './supabaseClient';
@@ -76,6 +77,11 @@ const Layout = () => {
     setOpen(!open);
   };
 
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate('/login');
+  };
+
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, route: '/home' },
     { text: 'Customers', icon: <PeopleIcon />, route: '/customers' },
@@ -127,6 +133,9 @@ const Layout = () => {
           <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', fontWeight: 600 }}>
             {user.name ? user.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'A'}
           </Avatar>
+          <IconButton color="inherit" sx={{ ml: 2 }} onClick={handleLogout} title="Logout">
+            <LogoutIcon />
+          </IconButton>
         </Toolbar>
       </AppBar>
       <Drawer
@@ -182,7 +191,7 @@ const Layout = () => {
           </List>
         </Box>
       </Drawer>
-      <Main open={open}>
+      <Main open={open} className="css-iiowsh">
         <Toolbar sx={{ minHeight: '70px !important' }} />
         <Outlet />
       </Main>
