@@ -34,7 +34,8 @@ const Login = () => {
         .eq('password', formData.password)
         .single();
       if (data) {
-        // Credentials match, redirect to homepage
+        // Credentials match, store email and redirect to homepage
+        localStorage.setItem('userEmail', data.email); // Store email for later use
         navigate('/home'); // Adjust route as needed
       } else {
         setError('Invalid email or password');

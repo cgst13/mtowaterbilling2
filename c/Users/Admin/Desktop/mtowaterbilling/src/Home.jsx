@@ -9,11 +9,9 @@ import {
   Receipt as ReceiptIcon, Payment as PaymentIcon, Person as PersonIcon,
   TrendingUp as TrendingUpIcon, Water as WaterIcon, AttachMoney as MoneyIcon,
   Notifications as NotificationsIcon, Settings as SettingsIcon,
-  Logout as LogoutIcon, Analytics as AnalyticsIcon, Group as GroupIcon
+  Logout as LogoutIcon, Analytics as AnalyticsIcon
 } from '@mui/icons-material';
 import { styled } from '@mui/system';
-import { supabase } from './supabaseClient'; // Ensure you have the correct path to your Supabase client
-import { useNavigate } from 'react-router-dom';
 
 const drawerWidth = 280;
 
@@ -39,8 +37,8 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
 );
 
 const StatsCard = styled(Card)(({ theme }) => ({
-  background: 'linear-gradient(135deg, #e0f7ff 0%, #cce7ff 100%)',
-  color: '#1e293b',
+  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+  color: 'white',
   height: '100%',
   transition: 'transform 0.2s ease-in-out',
   '&:hover': {
@@ -60,44 +58,27 @@ const ActionCard = styled(Card)(({ theme }) => ({
   },
 }));
 
-const Home = () => {
+const Home = ({ icon, title }) => {
+  const [open, setOpen] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
-  const [user, setUser] = useState({ name: '', role: '' });
-  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        // Get the logged-in user's email from localStorage
-        const email = localStorage.getItem('userEmail');
-        if (!email) {
-          console.error('No user email found in localStorage.');
-          return;
-        }
-        const { data, error } = await supabase
-          .from('users')
-          .select('firstname, lastname, role')
-          .eq('email', email)
-          .single();
-
-        if (error) {
-          console.error('Error fetching user data:', error);
-        } else {
-          setUser({
-            name: `${data.firstname} ${data.lastname}`,
-            role: data.role,
-          });
-        }
-      } catch (err) {
-        console.error('Error fetching user data:', err);
-      }
-    };
-
-    fetchUserData();
-
     const timer = setInterval(() => setCurrentDateTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  const handleDrawerToggle = () => {
+    setOpen(!open);
+  };
+
+  const menuItems = [
+    { text: 'Dashboard', icon: <DashboardIcon />, active: true },
+    { text: 'Customers', icon: <PeopleIcon /> },
+    { text: 'Billing', icon: <ReceiptIcon /> },
+    { text: 'Payments', icon: <PaymentIcon /> },
+    { text: 'Analytics', icon: <AnalyticsIcon /> },
+    { text: 'Users', icon: <PersonIcon /> },
+  ];
 
   const statsData = [
     { title: 'Total Customers', value: '1,247', icon: <PeopleIcon />, color: '#4f46e5' },
@@ -113,21 +94,114 @@ const Home = () => {
     { title: 'View Reports', description: 'Access detailed analytics and reports', color: '#8b5cf6' },
   ];
 
-  const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, route: '/home' },
-    { text: 'Customers', icon: <PeopleIcon />, route: '/customers' },
-    { text: 'Billing', icon: <ReceiptIcon />, route: '/billing' },
-    { text: 'Payments', icon: <PaymentIcon /> },
-    { text: 'Analytics', icon: <AnalyticsIcon /> },
-    { text: 'Users', icon: <PersonIcon /> },
-  ];
-
   return (
     <Box sx={{ display: 'flex' }}>
       <CssBaseline />
-      {/* Remove AppBar, Drawer, and sidebar rendering. */}
-      {/* Only render the dashboard cards, quick actions, etc. */}
-      <Container maxWidth="xl" sx={{ mt: 3, mb: 4 }}>
+      <AppBar 
+        position="fixed" 
+        sx={{ 
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+        }}
+      >
+        <Toolbar sx={{ minHeight: '70px !important' }}>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ mr: 2 }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <WaterIcon sx={{ mr: 2, fontSize: 28 }} />
+          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
+            Water Billing System
+          </Typography>
+          <IconButton color="inherit" sx={{ mr: 1 }}>
+            <NotificationsIcon />
+          </IconButton>
+          <Typography variant="body2" sx={{ mr: 3, opacity: 0.9 }}>
+            {currentDateTime.toLocaleString()}
+          </Typography>
+          <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', fontWeight: 600 }}>A</Avatar>
+        </Toolbar>
+      </AppBar>
+
+      <Drawer
+        sx={{
+          width: drawerWidth,
+          flexShrink: 0,
+          '& .MuiDrawer-paper': {
+            width: drawerWidth,
+            boxSizing: 'border-box',
+            borderRight: '1px solid #e2e8f0',
+            background: '#ffffff',
+          },
+        }}
+        variant="persistent"
+        anchor="left"
+        open={open}
+      >
+        <Toolbar sx={{ minHeight: '70px !important' }} />
+        <Box sx={{ p: 2 }}>
+          <Typography variant="subtitle2" sx={{ color: '#64748b', fontWeight: 600, mb: 2 }}>
+            MAIN MENU
+          </Typography>
+          <List sx={{ p: 0 }}>
+            {menuItems.map((item, index) => (
+              <ListItem 
+                button 
+                key={item.text}
+                sx={{
+                  borderRadius: 2,
+                  mb: 1,
+                  backgroundColor: item.active ? '#f1f5f9' : 'transparent',
+                  '&:hover': {
+                    backgroundColor: '#f1f5f9',
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ color: item.active ? '#4f46e5' : '#64748b', minWidth: 40 }}>
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText 
+                  primary={item.text} 
+                  sx={{ 
+                    '& .MuiTypography-root': { 
+                      fontWeight: item.active ? 600 : 400,
+                      color: item.active ? '#1e293b' : '#64748b'
+                    } 
+                  }} 
+                />
+              </ListItem>
+            ))}
+          </List>
+        </Box>
+        
+        <Box sx={{ mt: 'auto', p: 2 }}>
+          <Divider sx={{ mb: 2 }} />
+          <List sx={{ p: 0 }}>
+            <ListItem button sx={{ borderRadius: 2, mb: 1 }}>
+              <ListItemIcon sx={{ color: '#64748b', minWidth: 40 }}>
+                <SettingsIcon />
+              </ListItemIcon>
+              <ListItemText primary="Settings" sx={{ '& .MuiTypography-root': { color: '#64748b' } }} />
+            </ListItem>
+            <ListItem button sx={{ borderRadius: 2 }}>
+              <ListItemIcon sx={{ color: '#64748b', minWidth: 40 }}>
+                <LogoutIcon />
+              </ListItemIcon>
+              <ListItemText primary="Logout" sx={{ '& .MuiTypography-root': { color: '#64748b' } }} />
+            </ListItem>
+          </List>
+        </Box>
+      </Drawer>
+
+      <Main open={open}>
+        <Toolbar sx={{ minHeight: '70px !important' }} />
+        <Container maxWidth="xl" sx={{ mt: 3, mb: 4 }}>
           {/* Header Section */}
           <Box sx={{ mb: 4 }}>
             <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e293b', mb: 1 }}>
@@ -255,6 +329,7 @@ const Home = () => {
             </Box>
           </Paper>
         </Container>
+      </Main>
     </Box>
   );
 };
