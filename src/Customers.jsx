@@ -2,9 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from './supabaseClient';
 import {
   Box, Typography, TextField, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress,
-  TablePagination, Button, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, MenuItem, Select, InputLabel, FormControl, Snackbar, Alert, Card, CardContent, Stack, Avatar, Tooltip, Grid
+  TablePagination, Button, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, MenuItem, Select, InputLabel, FormControl, Snackbar, Alert, Card, CardContent, Stack, Avatar, Tooltip, Grid, Skeleton, Container
 } from '@mui/material';
-import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Group as GroupIcon, Search as SearchIcon, FilterList as FilterListIcon } from '@mui/icons-material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Group as GroupIcon, Search as SearchIcon, FilterList as FilterListIcon, SentimentDissatisfied as EmptyIcon } from '@mui/icons-material';
+import DownloadIcon from '@mui/icons-material/Download';
+import PageHeader from './PageHeader';
+import { useGlobalSnackbar } from './GlobalSnackbar';
+import AnimatedBackground from './AnimatedBackground';
 
 // Remove static barangayList
 // const barangayList = [
@@ -12,6 +16,34 @@ import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Group as GroupI
 // ];
 
 const initialForm = { name: '', type: '', barangay: '', discount: '', remarks: '' };
+
+function exportToCSV(data, filename) {
+  if (!data || !data.length) return;
+  const replacer = (key, value) => value === null ? '' : value;
+  const header = Object.keys(data[0]);
+  const csv = [
+    header.join(','),
+    ...data.map(row => header.map(fieldName => JSON.stringify(row[fieldName], replacer)).join(','))
+  ].join('\r\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  window.URL.revokeObjectURL(url);
+}
+
+// Add this helper function above the Customers component
+async function generateUniqueCustomerId(supabase) {
+  let id, exists;
+  do {
+    id = Math.floor(100000 + Math.random() * 900000); // 6-digit number
+    const { data } = await supabase.from('customers').select('customerid').eq('customerid', id);
+    exists = data && data.length > 0;
+  } while (exists);
+  return id;
+}
 
 const Customers = () => {
   const [customers, setCustomers] = useState([]);
@@ -28,21 +60,35 @@ const Customers = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [editId, setEditId] = useState(null);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const showSnackbar = useGlobalSnackbar();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState(null);
   const [sortOption, setSortOption] = useState('name_asc'); // Added sort option
+  const [totalCount, setTotalCount] = useState(0);
 
-  const fetchCustomers = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('customers')
-      .select('*')
-      .order('date_added', { ascending: false });
-    if (!error) setCustomers(data || []);
-    else setError('Failed to fetch customers');
-    setLoading(false);
-  };
+  // Add this useEffect for fetching customers with correct dependencies
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      setLoading(true);
+      const from = page * rowsPerPage;
+      const to = from + rowsPerPage - 1;
+      let query = supabase
+        .from('customers')
+        .select('*', { count: 'exact' })
+        .order('date_added', { ascending: false })
+        .range(from, to);
+      if (search) query = query.ilike('name', `%${search}%`);
+      if (filterBarangay) query = query.eq('barangay', filterBarangay);
+      if (filterType) query = query.eq('type', filterType);
+      const { data, error, count } = await query;
+      if (!error) {
+        setCustomers(data || []);
+        setTotalCount(count || 0);
+      } else setError('Failed to fetch customers');
+      setLoading(false);
+    };
+    fetchCustomers();
+  }, [page, rowsPerPage, search, filterBarangay, filterType]);
 
   const fetchDiscountOptions = async () => {
     const { data, error } = await supabase
@@ -66,7 +112,6 @@ const Customers = () => {
   };
 
   useEffect(() => {
-    fetchCustomers();
     fetchDiscountOptions();
     fetchTypeOptions();
     fetchBarangayOptions();
@@ -76,8 +121,6 @@ const Customers = () => {
     c.name.toLowerCase().includes(search.toLowerCase()) &&
     (!filterBarangay || c.barangay === filterBarangay) &&
     (!filterType || c.type === filterType);
-
-  const filteredCustomers = customers.filter(handleSearch);
 
   const handleChangePage = (event, newPage) => setPage(newPage);
   const handleChangeRowsPerPage = (event) => {
@@ -103,28 +146,29 @@ const Customers = () => {
   };
 
   const handleAddOrEdit = async () => {
-    if (!form.name) return setSnackbar({ open: true, message: 'Name is required', severity: 'error' });
+    if (!form.name) return showSnackbar('Name is required', 'error');
     if (editId) {
       // Edit
       const { error } = await supabase
         .from('customers')
         .update({ ...form })
         .eq('customerid', editId);
-      if (!error) setSnackbar({ open: true, message: 'Customer updated', severity: 'success' });
+      if (!error) showSnackbar(`Customer "${form.name}" updated successfully.`, 'success');
       else {
         console.error('Update failed:', error);
-        setSnackbar({ open: true, message: 'Update failed', severity: 'error' });
+        showSnackbar(`Update failed: ${error?.message || 'Unknown error'}`, 'error');
       }
     } else {
       // Add
+      const customerid = await generateUniqueCustomerId(supabase);
       const { error } = await supabase
         .from('customers')
-        .insert([{ ...form }]);
-      if (!error) setSnackbar({ open: true, message: 'Customer added', severity: 'success' });
-      else setSnackbar({ open: true, message: 'Add failed', severity: 'error' });
+        .insert([{ ...form, customerid }]);
+      if (!error) showSnackbar(`Customer "${form.name}" added successfully.`, 'success');
+      else showSnackbar(`Add failed: ${error?.message || 'Unknown error'}`, 'error');
     }
     setOpenDialog(false);
-    fetchCustomers();
+    // fetchCustomers(); // This is now handled by the useEffect
   };
 
   const handleDelete = async (id) => {
@@ -132,9 +176,9 @@ const Customers = () => {
       .from('customers')
       .delete()
       .eq('customerid', id);
-    if (!error) setSnackbar({ open: true, message: 'Customer deleted', severity: 'success' });
-    else setSnackbar({ open: true, message: 'Delete failed', severity: 'error' });
-    fetchCustomers();
+    if (!error) showSnackbar('Customer deleted successfully.', 'success');
+    else showSnackbar(`Delete failed: ${error?.message || 'Unknown error'}`, 'error');
+    // fetchCustomers(); // This is now handled by the useEffect
   };
 
   const handleDeleteClick = (customerid) => {
@@ -154,18 +198,27 @@ const Customers = () => {
   };
 
   return (
-    <Box sx={{ p: { xs: 1, md: 3 }, background: '#f4f6fa', minHeight: '100vh' }}>
-      <Card elevation={3} sx={{ maxWidth: 1400, mx: 'auto', p: 0, overflow: 'visible' }}>
-        <CardContent>
-          <Stack direction={{ xs: 'column', sm: 'row' }} alignItems="center" spacing={2} sx={{ mb: 3 }}>
-            <Avatar sx={{ bgcolor: 'primary.main', width: 56, height: 56 }}>
-              <GroupIcon fontSize="large" />
-            </Avatar>
-            <Typography variant="h4" sx={{ fontWeight: 700, flexGrow: 1 }}>Customers</Typography>
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleDialogOpen()} size="large">
-              Add Customer
-            </Button>
-          </Stack>
+    <Box sx={{ position: 'relative', minHeight: '100vh', p: 0 }}>
+      <AnimatedBackground />
+      <Container maxWidth="lg" sx={{ py: 4, position: 'relative', zIndex: 2 }}>
+        <PageHeader
+          title="Customers"
+          actions={
+            <Stack direction="row" spacing={2}>
+              <Button
+                variant="outlined"
+                startIcon={<DownloadIcon />}
+                onClick={() => exportToCSV(customers, 'customers.csv')}
+                size="large"
+              >
+                Export CSV
+              </Button>
+              <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleDialogOpen()} size="large">Add Customer</Button>
+            </Stack>
+          }
+        />
+        <Card elevation={3} sx={{ p: 0, overflow: 'visible', boxShadow: 'none', background: 'transparent' }}>
+          <CardContent sx={{ p: 0 }}>
           <Paper elevation={1} sx={{ mb: 3, p: 2, borderRadius: 2, background: '#f9fafb' }}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" flexWrap="wrap">
               <TextField
@@ -213,57 +266,81 @@ const Customers = () => {
               <FilterListIcon sx={{ color: 'text.secondary', ml: 1 }} />
             </Stack>
           </Paper>
-          <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: 3, mb: 2 }}>
-            <Table>
+            <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: '0 2px 8px rgba(30,58,138,0.04)', mb: 2 }}>
+              <Table sx={{ minWidth: 650 }} stickyHeader>
               <TableHead>
                 <TableRow sx={{ background: '#f1f5f9' }}>
-                  <TableCell>ID</TableCell>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Type</TableCell>
-                  <TableCell>Barangay</TableCell>
-                  <TableCell align="right">Actions</TableCell>
+                    <TableCell sx={{ fontWeight: 700, background: '#f1f5f9', color: 'primary.main' }}>Name</TableCell>
+                    <TableCell sx={{ fontWeight: 700, background: '#f1f5f9', color: 'primary.main' }}>Type</TableCell>
+                    <TableCell sx={{ fontWeight: 700, background: '#f1f5f9', color: 'primary.main' }}>Barangay</TableCell>
+                    <TableCell sx={{ fontWeight: 700, background: '#f1f5f9', color: 'primary.main' }}>Discount</TableCell>
+                    <TableCell sx={{ fontWeight: 700, background: '#f1f5f9', color: 'primary.main' }}>Remarks</TableCell>
+                    <TableCell sx={{ fontWeight: 700, background: '#f1f5f9', color: 'primary.main' }} align="right">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredCustomers.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((customer) => (
-                  <TableRow key={customer.customerid} hover sx={{ transition: 'background 0.2s', '&:hover': { background: '#e3e9f6' } }}>
-                    <TableCell>{customer.customerid}</TableCell>
-                    <TableCell>
-                      <Stack direction="row" alignItems="center" spacing={1}>
-                        <Avatar sx={{ width: 28, height: 28, bgcolor: 'secondary.main', fontSize: 14 }}>
-                          {customer.name ? customer.name.split(' ').map(n => n[0]).join('').toUpperCase() : '?'}
-                        </Avatar>
-                        {customer.name}
-                      </Stack>
+                  {loading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell><Skeleton variant="text" width={120} /></TableCell>
+                        <TableCell><Skeleton variant="text" width={80} /></TableCell>
+                        <TableCell><Skeleton variant="text" width={80} /></TableCell>
+                        <TableCell><Skeleton variant="text" width={60} /></TableCell>
+                        <TableCell><Skeleton variant="text" width={100} /></TableCell>
+                        <TableCell align="right"><Skeleton variant="circular" width={32} height={32} /></TableCell>
+                      </TableRow>
+                    ))
+                  ) : customers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: 'text.secondary' }}>
+                          <EmptyIcon sx={{ fontSize: 48, mb: 1 }} />
+                          <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
+                            No customers found
+                          </Typography>
+                          <Typography variant="body2">Try adjusting your search or filters.</Typography>
+                        </Box>
                     </TableCell>
-                    <TableCell>{customer.type}</TableCell>
-                    <TableCell>{customer.barangay}</TableCell>
+                    </TableRow>
+                  ) : (
+                    customers.map((c, i) => (
+                      <TableRow
+                        key={c.customerid}
+                        hover
+                        sx={{
+                          backgroundColor: i % 2 === 0 ? '#f8fafc' : '#e0f2fe',
+                          transition: 'background 0.2s',
+                          '&:hover': {
+                            backgroundColor: '#bae6fd',
+                          },
+                        }}
+                      >
+                        <TableCell>{c.name}</TableCell>
+                        <TableCell>{c.type}</TableCell>
+                        <TableCell>{c.barangay}</TableCell>
+                        <TableCell>{c.discount}</TableCell>
+                        <TableCell>{c.remarks}</TableCell>
                     <TableCell align="right">
                       <Tooltip title="Edit">
-                        <IconButton color="primary" onClick={() => handleDialogOpen(customer)}><EditIcon /></IconButton>
+                            <IconButton onClick={() => handleDialogOpen(c)} size="small" color="primary">
+                              <EditIcon />
+                            </IconButton>
                       </Tooltip>
                       <Tooltip title="Delete">
-                        <IconButton color="error" onClick={() => handleDeleteClick(customer.customerid)}><DeleteIcon /></IconButton>
+                            <IconButton onClick={() => handleDeleteClick(c.customerid)} size="small" color="error">
+                              <DeleteIcon />
+                            </IconButton>
                       </Tooltip>
                     </TableCell>
                   </TableRow>
-                ))}
-                {filteredCustomers.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={5} align="center">
-                      <Box sx={{ py: 4, color: 'text.secondary' }}>
-                        <GroupIcon sx={{ fontSize: 48, mb: 1 }} />
-                        <Typography>No customers found.</Typography>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
+                    ))
                 )}
               </TableBody>
             </Table>
           </TableContainer>
           <TablePagination
             component="div"
-            count={filteredCustomers.length}
+            count={totalCount}
             page={page}
             onPageChange={handleChangePage}
             rowsPerPage={rowsPerPage}
@@ -272,6 +349,7 @@ const Customers = () => {
           />
         </CardContent>
       </Card>
+      </Container>
       <Dialog open={openDialog} onClose={handleDialogClose} maxWidth="xs" fullWidth>
         <DialogTitle>{editId ? 'Edit Customer' : 'Add Customer'}</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
@@ -321,9 +399,7 @@ const Customers = () => {
           <Button onClick={handleDeleteConfirm} color="error" variant="contained">Delete</Button>
         </DialogActions>
       </Dialog>
-      <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
-        <Alert severity={snackbar.severity} sx={{ width: '100%' }}>{snackbar.message}</Alert>
-      </Snackbar>
+      {/* Remove local Snackbar/Alert, global snackbar will handle alerts */}
     </Box>
   );
 };
