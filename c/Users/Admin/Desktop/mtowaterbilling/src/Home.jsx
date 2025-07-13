@@ -95,241 +95,52 @@ const Home = ({ icon, title }) => {
   ];
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <CssBaseline />
-      <AppBar 
-        position="fixed" 
-        sx={{ 
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
-        }}
-      >
-        <Toolbar sx={{ minHeight: '70px !important' }}>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2 }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <WaterIcon sx={{ mr: 2, fontSize: 28 }} />
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
-            Water Billing System
-          </Typography>
-          <IconButton color="inherit" sx={{ mr: 1 }}>
-            <NotificationsIcon />
-          </IconButton>
-          <Typography variant="body2" sx={{ mr: 3, opacity: 0.9 }}>
-            {currentDateTime.toLocaleString()}
-          </Typography>
-          <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', fontWeight: 600 }}>A</Avatar>
-        </Toolbar>
-      </AppBar>
-
-      <Drawer
-        sx={{
-          width: drawerWidth,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': {
-            width: drawerWidth,
-            boxSizing: 'border-box',
-            borderRight: '1px solid #e2e8f0',
-            background: '#ffffff',
-          },
-        }}
-        variant="persistent"
-        anchor="left"
-        open={open}
-      >
-        <Toolbar sx={{ minHeight: '70px !important' }} />
-        <Box sx={{ p: 2 }}>
-          <Typography variant="subtitle2" sx={{ color: '#64748b', fontWeight: 600, mb: 2 }}>
-            MAIN MENU
-          </Typography>
-          <List sx={{ p: 0 }}>
-            {menuItems.map((item, index) => (
-              <ListItem 
-                button 
-                key={item.text}
-                sx={{
-                  borderRadius: 2,
-                  mb: 1,
-                  backgroundColor: item.active ? '#f1f5f9' : 'transparent',
-                  '&:hover': {
-                    backgroundColor: '#f1f5f9',
-                  },
-                }}
-              >
-                <ListItemIcon sx={{ color: item.active ? '#4f46e5' : '#64748b', minWidth: 40 }}>
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText 
-                  primary={item.text} 
-                  sx={{ 
-                    '& .MuiTypography-root': { 
-                      fontWeight: item.active ? 600 : 400,
-                      color: item.active ? '#1e293b' : '#64748b'
-                    } 
-                  }} 
-                />
-              </ListItem>
-            ))}
-          </List>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f7f7f7', width: '100%', overflow: 'hidden', p: { xs: 1, sm: 3 } }}>
+      <Box sx={{ maxWidth: 1200, mx: 'auto', width: '100%' }}>
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="h5" fontWeight={600} sx={{ mb: 0.5, color: '#222' }}>Dashboard Overview</Typography>
+          <Typography variant="body2" sx={{ color: '#666' }}>LGU Concepcion, Romblon - Water Billing Management System</Typography>
         </Box>
-        
-        <Box sx={{ mt: 'auto', p: 2 }}>
-          <Divider sx={{ mb: 2 }} />
-          <List sx={{ p: 0 }}>
-            <ListItem button sx={{ borderRadius: 2, mb: 1 }}>
-              <ListItemIcon sx={{ color: '#64748b', minWidth: 40 }}>
-                <SettingsIcon />
-              </ListItemIcon>
-              <ListItemText primary="Settings" sx={{ '& .MuiTypography-root': { color: '#64748b' } }} />
-            </ListItem>
-            <ListItem button sx={{ borderRadius: 2 }}>
-              <ListItemIcon sx={{ color: '#64748b', minWidth: 40 }}>
-                <LogoutIcon />
-              </ListItemIcon>
-              <ListItemText primary="Logout" sx={{ '& .MuiTypography-root': { color: '#64748b' } }} />
-            </ListItem>
-          </List>
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="body2" sx={{ color: '#888' }}>{currentDateTime.toLocaleString()}</Typography>
         </Box>
-      </Drawer>
-
-      <Main open={open}>
-        <Toolbar sx={{ minHeight: '70px !important' }} />
-        <Container maxWidth="xl" sx={{ mt: 3, mb: 4 }}>
-          {/* Header Section */}
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="h4" sx={{ fontWeight: 700, color: '#1e293b', mb: 1 }}>
-              Dashboard Overview
-            </Typography>
-            <Typography variant="subtitle1" sx={{ color: '#64748b' }}>
-              LGU Concepcion, Romblon - Water Billing Management System
-            </Typography>
-            <Chip 
-              label="System Online" 
-              color="success" 
-              size="small" 
-              sx={{ mt: 1, fontWeight: 600 }}
-            />
-          </Box>
-
-          {/* Stats Cards */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            {statsData.map((stat, index) => (
+        {/* Stats Cards */}
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          {statsData.map((stat, index) => (
+            <Grid item xs={12} sm={6} md={3} key={index}>
+              <Paper sx={{ p: 2, borderRadius: 2, boxShadow: 'none', bgcolor: '#fff', textAlign: 'center' }}>
+                <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5, color: '#222' }}>{stat.value}</Typography>
+                <Typography variant="body2" sx={{ color: '#666' }}>{stat.title}</Typography>
+              </Paper>
+            </Grid>
+          ))}
+        </Grid>
+        {/* Quick Actions */}
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: '#222', mb: 2 }}>Quick Actions</Typography>
+          <Grid container spacing={2}>
+            {quickActions.map((action, index) => (
               <Grid item xs={12} sm={6} md={3} key={index}>
-                <StatsCard>
-                  <CardContent sx={{ p: 3 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                      <Box sx={{ 
-                        backgroundColor: 'rgba(255,255,255,0.2)', 
-                        borderRadius: 2, 
-                        p: 1.5,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center'
-                      }}>
-                        {stat.icon}
-                      </Box>
-                      <TrendingUpIcon sx={{ opacity: 0.7 }} />
-                    </Box>
-                    <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-                      {stat.value}
-                    </Typography>
-                    <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                      {stat.title}
-                    </Typography>
-                  </CardContent>
-                </StatsCard>
+                <Paper sx={{ p: 2, borderRadius: 2, boxShadow: 'none', bgcolor: '#fff', textAlign: 'center' }}>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1, color: '#222' }}>{action.title}</Typography>
+                  <Typography variant="body2" sx={{ color: '#666', mb: 2 }}>{action.description}</Typography>
+                  <Button variant="outlined" size="small" sx={{ borderRadius: 2, fontWeight: 500, width: '100%' }}>Get Started</Button>
+                </Paper>
               </Grid>
             ))}
           </Grid>
-
-          {/* Quick Actions */}
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="h5" sx={{ fontWeight: 600, color: '#1e293b', mb: 3 }}>
-              Quick Actions
+        </Box>
+        {/* Recent Activity */}
+        <Paper sx={{ p: 2, borderRadius: 2, boxShadow: 'none', bgcolor: '#fff' }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, color: '#222', mb: 2 }}>Recent Activity</Typography>
+          <Box sx={{ textAlign: 'center', py: 3 }}>
+            <Typography variant="body2" sx={{ color: '#888' }}>
+              No recent activity to display. Start by adding customers or processing payments.
             </Typography>
-            <Grid container spacing={3}>
-              {quickActions.map((action, index) => (
-                <Grid item xs={12} sm={6} md={3} key={index}>
-                  <ActionCard>
-                    <CardContent sx={{ p: 3, textAlign: 'center' }}>
-                      <Box 
-                        sx={{ 
-                          width: 60, 
-                          height: 60, 
-                          borderRadius: '50%', 
-                          backgroundColor: `${action.color}15`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          margin: '0 auto 16px auto'
-                        }}
-                      >
-                        <Box sx={{ color: action.color, fontSize: 24 }}>
-                          {index === 0 && <PeopleIcon />}
-                          {index === 1 && <ReceiptIcon />}
-                          {index === 2 && <PaymentIcon />}
-                          {index === 3 && <AnalyticsIcon />}
-                        </Box>
-                      </Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: '#1e293b' }}>
-                        {action.title}
-                      </Typography>
-                      <Typography variant="body2" sx={{ color: '#64748b', mb: 2 }}>
-                        {action.description}
-                      </Typography>
-                      <Button 
-                        variant="outlined" 
-                        size="small"
-                        sx={{ 
-                          borderColor: action.color,
-                          color: action.color,
-                          '&:hover': {
-                            backgroundColor: `${action.color}10`,
-                            borderColor: action.color
-                          }
-                        }}
-                      >
-                        Get Started
-                      </Button>
-                    </CardContent>
-                  </ActionCard>
-                </Grid>
-              ))}
-            </Grid>
+            <Button variant="contained" sx={{ mt: 2, borderRadius: 2, fontWeight: 500 }}>View All Activities</Button>
           </Box>
-
-          {/* Recent Activity */}
-          <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid #e2e8f0' }}>
-            <Typography variant="h5" sx={{ fontWeight: 600, color: '#1e293b', mb: 3 }}>
-              Recent Activity
-            </Typography>
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Typography variant="body1" sx={{ color: '#64748b' }}>
-                No recent activity to display. Start by adding customers or processing payments.
-              </Typography>
-              <Button 
-                variant="contained" 
-                sx={{ 
-                  mt: 2,
-                  background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #4338ca, #6d28d9)',
-                  }
-                }}
-              >
-                View All Activities
-              </Button>
-            </Box>
-          </Paper>
-        </Container>
-      </Main>
+        </Paper>
+      </Box>
     </Box>
   );
 };

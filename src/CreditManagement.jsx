@@ -7,6 +7,7 @@ import { supabase } from './supabaseClient';
 import PageHeader from './PageHeader';
 import { useGlobalSnackbar } from './GlobalSnackbar';
 import AnimatedBackground from './AnimatedBackground';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 const CreditManagement = () => {
   const [search, setSearch] = useState('');
@@ -17,6 +18,7 @@ const CreditManagement = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const showSnackbar = useGlobalSnackbar();
   const [editMode, setEditMode] = useState(false);
+  const isMobile = useMediaQuery('(max-width:600px)');
 
   useEffect(() => {
     if (search.trim() === '') {
@@ -91,30 +93,37 @@ const CreditManagement = () => {
   };
 
   return (
-    <Box sx={{ position: 'relative', minHeight: '100vh', p: 0 }}>
-      <AnimatedBackground />
-      <Container maxWidth="lg" sx={{ py: 4, position: 'relative', zIndex: 2 }}>
-        <PageHeader title="Credit Management" subtitle="Manually add credits to customer accounts" />
-        <Box sx={{ maxWidth: 400, mb: 3 }}>
+    <Box sx={{ minHeight: '100vh', p: { xs: 0, sm: 3 }, bgcolor: '#f7f9fb', width: '100%', overflow: 'hidden' }}>
+      {/* Simple Title Header */}
+      <Box sx={{ py: { xs: 1, sm: 4 }, px: { xs: 1, sm: 2 }, width: '100%' }}>
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h5" sx={{ fontWeight: 600, color: '#22223b', mb: 0.5, fontSize: { xs: 20, sm: 24 } }}>
+            Credit Management
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            Manually add credits to customer accounts
+          </Typography>
+        </Box>
+        <Box sx={{ maxWidth: 400, mb: 3, width: '100%' }}>
           <TextField
             label="Search customer name"
             variant="outlined"
             value={search}
             onChange={e => setSearch(e.target.value)}
             size="small"
-            InputProps={{ startAdornment: <SearchIcon sx={{ mr: 1 }} /> }}
             sx={{ width: '100%' }}
+            inputProps={{ style: { fontSize: 15 } }}
           />
         </Box>
-        <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: '0 2px 8px rgba(30,58,138,0.04)', maxWidth: '100%' }}>
-          <Table sx={{ minWidth: 650 }}>
+        <Paper elevation={0} sx={{ borderRadius: 2, boxShadow: 'none', width: '100%', mb: 2 }}>
+          <Table sx={{ width: '100%', fontSize: { xs: 12, sm: 15 } }} size={isMobile ? 'small' : 'medium'}>
             <TableHead>
-              <TableRow sx={{ background: '#f1f5f9' }}>
-                <TableCell sx={{ fontWeight: 700, color: 'primary.main' }}>Name</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: 'primary.main' }}>Barangay</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: 'primary.main' }}>Type</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: 'primary.main' }}>Current Credit</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, color: 'primary.main' }}>Actions</TableCell>
+              <TableRow sx={{ background: '#f1f3f6' }}>
+                <TableCell sx={{ fontWeight: 700, color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 } }}>Name</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 } }}>Barangay</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 } }}>Type</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 } }}>Current Credit</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 } }}>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -124,38 +133,26 @@ const CreditManagement = () => {
                 </TableRow>
               ) : customers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: 'text.secondary' }}>
-                      <WalletIcon sx={{ fontSize: 48, mb: 1 }} />
-                      <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                        No customers found
-                      </Typography>
-                      <Typography variant="body2">Try searching for a customer name.</Typography>
-                    </Box>
+                  <TableCell colSpan={5} align="center" sx={{ py: 6, color: 'text.secondary', fontSize: { xs: 13, sm: 15 } }}>
+                    <Typography variant="h6" sx={{ fontWeight: 500, mb: 1, fontSize: { xs: 15, sm: 18 } }}>
+                      No customers found
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Try searching for a customer name.
+                    </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
                 customers.map((c, i) => (
-                  <TableRow key={c.customerid} hover sx={{ backgroundColor: i % 2 === 0 ? '#f8fafc' : '#e0f2fe', transition: 'background 0.2s', '&:hover': { backgroundColor: '#bae6fd' } }}>
-                    <TableCell>
-                      <Stack direction="row" alignItems="center" spacing={1}>
-                        <Avatar sx={{ width: 28, height: 28, bgcolor: 'secondary.main', fontSize: 14 }}>
-                          {c.name ? c.name.split(' ').map(n => n[0]).join('').toUpperCase() : '?'}
-                        </Avatar>
-                        {c.name}
-                      </Stack>
-                    </TableCell>
-                    <TableCell>{c.barangay}</TableCell>
-                    <TableCell>{c.type}</TableCell>
-                    <TableCell>{c.credit_balance ? `₱${Number(c.credit_balance).toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '₱0.00'}</TableCell>
-                    <TableCell align="right">
-                      <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleAddCreditClick(c)} sx={{ mr: 1 }}>
-                        Add Credit
-                      </Button>
+                  <TableRow key={c.customerid} sx={{ background: i % 2 === 0 ? '#fff' : '#f7f9fb', transition: 'none' }}>
+                    <TableCell sx={{ color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 } }}>{c.name}</TableCell>
+                    <TableCell sx={{ color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 } }}>{c.barangay}</TableCell>
+                    <TableCell sx={{ color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 } }}>{c.type}</TableCell>
+                    <TableCell sx={{ color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 } }}>{c.credit_balance ? `₱${Number(c.credit_balance).toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '₱0.00'}</TableCell>
+                    <TableCell align="right" sx={{ px: { xs: 1, sm: 2 } }}>
+                      <Button variant="contained" onClick={() => handleAddCreditClick(c)} sx={{ fontWeight: 500, borderRadius: 2, minWidth: 44, mr: 1, px: 2 }}>{'Add Credit'}</Button>
                       {Number(c.credit_balance) > 0 && (
-                        <Button variant="outlined" startIcon={<EditIcon />} onClick={() => handleEditCreditClick(c)}>
-                          Edit
-                        </Button>
+                        <Button variant="outlined" onClick={() => handleEditCreditClick(c)} sx={{ fontWeight: 500, borderRadius: 2, minWidth: 44, px: 2 }}>Edit</Button>
                       )}
                     </TableCell>
                   </TableRow>
@@ -163,27 +160,28 @@ const CreditManagement = () => {
               )}
             </TableBody>
           </Table>
-        </TableContainer>
-        <Dialog open={dialogOpen} onClose={handleDialogClose} maxWidth="xs" fullWidth>
-          <DialogTitle>{editMode ? 'Edit Credit' : `Add Credit to ${selectedCustomer?.name}`}</DialogTitle>
-          <DialogContent>
-            <TextField
-              label="Credit Amount"
-              type="number"
-              value={creditAmount}
-              onChange={e => setCreditAmount(e.target.value)}
-              fullWidth
-              sx={{ mt: 2 }}
-              inputProps={{ min: 0 }}
-            />
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={handleDialogClose}>Cancel</Button>
-            <Button onClick={handleAddCredit} variant="contained">{editMode ? 'Update Credit' : 'Add Credit'}</Button>
-          </DialogActions>
-        </Dialog>
-        {/* Remove local Snackbar/Alert, global snackbar will handle alerts */}
-      </Container>
+        </Paper>
+      </Box>
+      <Dialog open={dialogOpen} onClose={handleDialogClose} maxWidth="xs" fullWidth fullScreen={isMobile}
+        PaperProps={{ sx: { borderRadius: isMobile ? 0 : 2, bgcolor: '#fff', minHeight: isMobile ? '100vh' : 'auto', width: '100vw', m: 0 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 600, fontSize: { xs: 18, sm: 20 }, px: { xs: 2, sm: 3 } }}>{editMode ? 'Edit Credit' : `Add Credit to ${selectedCustomer?.name}`}</DialogTitle>
+        <DialogContent sx={{ p: { xs: 2, sm: 3 } }}>
+          <TextField
+            label="Credit Amount"
+            type="number"
+            value={creditAmount}
+            onChange={e => setCreditAmount(e.target.value)}
+            fullWidth
+            sx={{ mt: 2 }}
+            inputProps={{ min: 0, style: { fontSize: 15 } }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: 2 }}>
+          <Button onClick={handleDialogClose} sx={{ borderRadius: 2, minWidth: 100, width: { xs: '100%', sm: 'auto' } }}>Cancel</Button>
+          <Button onClick={handleAddCredit} variant="contained" sx={{ borderRadius: 2, minWidth: 120, width: { xs: '100%', sm: 'auto' } }}>{editMode ? 'Update Credit' : 'Add Credit'}</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

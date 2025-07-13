@@ -7,6 +7,7 @@ import { supabase } from './supabaseClient';
 import PageHeader from './PageHeader';
 import { useGlobalSnackbar } from './GlobalSnackbar';
 import AnimatedBackground from './AnimatedBackground';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 const roleOptions = ['Admin', 'Collector', 'Reader'];
 const statusOptions = ['active', 'inactive', 'pending'];
@@ -33,6 +34,7 @@ const Users = () => {
   const [departmentOptions, setDepartmentOptions] = useState([]);
   const showSnackbar = useGlobalSnackbar();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const isMobile = useMediaQuery('(max-width:600px)');
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -189,172 +191,109 @@ const Users = () => {
   };
 
   return (
-    <Box sx={{ position: 'relative', minHeight: '100vh', p: 0 }}>
-      <AnimatedBackground />
-      <Container maxWidth="lg" sx={{ py: 4, position: 'relative', zIndex: 2 }}>
-        <PageHeader
-          title="Users"
-          actions={
-            <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleDialogOpen()}>
-              Add User
-            </Button>
-          }
-        />
-        <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: '0 2px 8px rgba(30,58,138,0.04)', maxWidth: '100%' }}>
-          <Table sx={{ minWidth: 900 }}>
-            <TableHead>
-              <TableRow sx={{ background: '#f1f5f9' }}>
-                <TableCell sx={{ fontWeight: 700, color: 'primary.main' }}>Name</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: 'primary.main' }}>Email</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: 'primary.main' }}>Department</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: 'primary.main' }}>Position</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: 'primary.main' }}>Role</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: 'primary.main' }}>Status</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: 'primary.main' }}>Date Created</TableCell>
-                <TableCell sx={{ fontWeight: 700, color: 'primary.main' }}>Last Login</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 700, color: 'primary.main' }}>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={9} align="center"><CircularProgress size={32} sx={{ my: 3 }} /></TableCell>
+    <Box sx={{ minHeight: '100vh', p: { xs: 1, sm: 3 }, bgcolor: '#f7f7f7', width: '100%', overflow: 'hidden' }}>
+      <Box sx={{ maxWidth: 1200, mx: 'auto', width: '100%' }}>
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="h5" fontWeight={600} sx={{ mb: 0.5, color: '#222' }}>Users</Typography>
+          <Typography variant="body2" sx={{ color: '#666' }}>Manage user accounts and permissions</Typography>
+        </Box>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} justifyContent="space-between" sx={{ mb: 2 }}>
+          <Button variant="contained" onClick={() => handleDialogOpen()} sx={{ borderRadius: 2, minWidth: 120, width: { xs: '100%', sm: 'auto' }, fontWeight: 500 }}>Add User</Button>
+        </Stack>
+        <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: 2, boxShadow: 'none', mb: 2 }}>
+          <TableContainer sx={{ maxHeight: { xs: 440, sm: 600 }, overflowX: 'auto' }}>
+            <Table stickyHeader size="small" sx={{ minWidth: 650 }}>
+              <TableHead>
+                <TableRow sx={{ bgcolor: '#f0f0f0' }}>
+                  <TableCell sx={{ fontWeight: 600, color: '#333', borderBottom: '1px solid #e0e0e0' }}>First Name</TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#333', borderBottom: '1px solid #e0e0e0' }}>Last Name</TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#333', borderBottom: '1px solid #e0e0e0' }}>Email</TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#333', borderBottom: '1px solid #e0e0e0' }}>Department</TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#333', borderBottom: '1px solid #e0e0e0' }}>Position</TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#333', borderBottom: '1px solid #e0e0e0' }}>Role</TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#333', borderBottom: '1px solid #e0e0e0' }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#333', borderBottom: '1px solid #e0e0e0' }} align="right">Actions</TableCell>
                 </TableRow>
-              ) : users.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: 'text.secondary' }}>
-                      <PersonIcon sx={{ fontSize: 48, mb: 1 }} />
-                      <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                        No users found
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                users.map((u, i) => (
-                  <TableRow key={u.userid} hover sx={{ backgroundColor: i % 2 === 0 ? '#f8fafc' : '#e0f2fe', transition: 'background 0.2s', '&:hover': { backgroundColor: '#bae6fd' } }}>
-                    <TableCell>{u.firstname} {u.lastname}</TableCell>
-                    <TableCell>{u.email}</TableCell>
-                    <TableCell>{u.department}</TableCell>
-                    <TableCell>{u.position}</TableCell>
-                    <TableCell>{u.role}</TableCell>
-                    <TableCell>{u.status}</TableCell>
-                    <TableCell>{u.datecreated ? new Date(u.datecreated).toLocaleString() : ''}</TableCell>
-                    <TableCell>{u.lastlogin ? new Date(u.lastlogin).toLocaleString() : ''}</TableCell>
-                    <TableCell align="right">
-                      <IconButton color="primary" onClick={() => handleDialogOpen(u)}><EditIcon /></IconButton>
-                      <IconButton color="error" onClick={() => { setSelectedUser(u); setDeleteDialogOpen(true); }}><DeleteIcon /></IconButton>
-                    </TableCell>
+              </TableHead>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={8} align="center"><CircularProgress size={24} /></TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-        <Dialog open={dialogOpen} onClose={handleDialogClose} maxWidth="sm" fullWidth>
-          <DialogTitle>{editMode ? 'Edit User' : 'Add User'}</DialogTitle>
-          <DialogContent>
+                ) : users.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} align="center">No users found.</TableCell>
+                  </TableRow>
+                ) : (
+                  users.map((user, idx) => (
+                    <TableRow key={user.userid} sx={{ bgcolor: idx % 2 === 0 ? '#fff' : '#f8f8f8', '&:last-child td': { borderBottom: 0 } }}>
+                      <TableCell>{user.firstname}</TableCell>
+                      <TableCell>{user.lastname}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>{user.department}</TableCell>
+                      <TableCell>{user.position}</TableCell>
+                      <TableCell>{user.role}</TableCell>
+                      <TableCell>{user.status}</TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                          <Button size="small" variant="outlined" sx={{ borderRadius: 2, minWidth: 0, px: 1 }} onClick={() => handleDialogOpen(user)}>Edit</Button>
+                          <Button size="small" variant="outlined" color="error" sx={{ borderRadius: 2, minWidth: 0, px: 1 }} onClick={() => { setSelectedUser(user); setDeleteDialogOpen(true); }}>Delete</Button>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+        {/* User Dialog */}
+        <Dialog
+          open={dialogOpen}
+          onClose={handleDialogClose}
+          fullScreen={isMobile}
+          PaperProps={{ sx: { borderRadius: { xs: 0, sm: 2 }, width: { xs: '100%', sm: 400 }, m: 0 } }}
+        >
+          <DialogTitle sx={{ fontWeight: 600, color: '#222', pb: 0 }}>{editMode ? 'Edit User' : 'Add User'}</DialogTitle>
+          <DialogContent sx={{ bgcolor: '#fff', p: 2 }}>
             <Stack spacing={2} sx={{ mt: 1 }}>
-              <TextField
-                label="Email"
-                name="email"
-                value={form.email}
-                onChange={handleFormChange}
-                fullWidth
-                disabled={editMode}
-              />
-              <TextField
-                label="First Name"
-                name="firstname"
-                value={form.firstname}
-                onChange={handleFormChange}
-                fullWidth
-              />
-              <TextField
-                label="Last Name"
-                name="lastname"
-                value={form.lastname}
-                onChange={handleFormChange}
-                fullWidth
-              />
-              {/* Department Dropdown */}
-              <Select
-                label="Department"
-                name="department"
-                value={form.department}
-                onChange={handleFormChange}
-                fullWidth
-                size="small"
-                displayEmpty
-              >
-                <MenuItem value=""><em>Select Department</em></MenuItem>
-                {departmentOptions.map((dept, idx) => (
-                  <MenuItem key={idx} value={dept}>{dept}</MenuItem>
-                ))}
+              <TextField label="First Name" name="firstname" value={form.firstname} onChange={handleFormChange} fullWidth size="small" autoFocus required />
+              <TextField label="Last Name" name="lastname" value={form.lastname} onChange={handleFormChange} fullWidth size="small" required />
+              <TextField label="Email" name="email" value={form.email} onChange={handleFormChange} fullWidth size="small" required />
+              <Select label="Department" name="department" value={form.department} onChange={handleFormChange} displayEmpty size="small" fullWidth>
+                <MenuItem value=""><em>None</em></MenuItem>
+                {departmentOptions.map((d, i) => <MenuItem key={i} value={d}>{d}</MenuItem>)}
               </Select>
-              <TextField
-                label="Position"
-                name="position"
-                value={form.position}
-                onChange={handleFormChange}
-                fullWidth
-              />
-              <Select
-                label="Role"
-                name="role"
-                value={form.role}
-                onChange={handleFormChange}
-                fullWidth
-                size="small"
-              >
-                {roleOptions.map(role => <MenuItem key={role} value={role}>{role}</MenuItem>)}
+              <TextField label="Position" name="position" value={form.position} onChange={handleFormChange} fullWidth size="small" />
+              <Select label="Role" name="role" value={form.role} onChange={handleFormChange} size="small" fullWidth>
+                {roleOptions.map((r, i) => <MenuItem key={i} value={r}>{r}</MenuItem>)}
               </Select>
-              <Select
-                label="Status"
-                name="status"
-                value={form.status}
-                onChange={handleFormChange}
-                fullWidth
-                size="small"
-              >
-                {statusOptions.map(status => <MenuItem key={status} value={status}>{status}</MenuItem>)}
+              <Select label="Status" name="status" value={form.status} onChange={handleFormChange} size="small" fullWidth>
+                {statusOptions.map((s, i) => <MenuItem key={i} value={s}>{s}</MenuItem>)}
               </Select>
-              {editMode && (
-                <>
-                  <TextField
-                    label="Date Created"
-                    value={form.datecreated ? new Date(form.datecreated).toLocaleString() : ''}
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                  />
-                  <TextField
-                    label="Last Login"
-                    value={form.lastlogin ? new Date(form.lastlogin).toLocaleString() : ''}
-                    fullWidth
-                    InputProps={{ readOnly: true }}
-                  />
-                </>
-              )}
             </Stack>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={handleDialogClose}>Cancel</Button>
-            <Button onClick={handleSaveUser} variant="contained">{editMode ? 'Update' : 'Add'}</Button>
+          <DialogActions sx={{ bgcolor: '#fff', px: 2, pb: 2 }}>
+            <Button onClick={handleDialogClose} variant="outlined" sx={{ borderRadius: 2 }}>Cancel</Button>
+            <Button onClick={handleSaveUser} variant="contained" sx={{ borderRadius: 2, fontWeight: 500 }}>{editMode ? 'Save' : 'Add'}</Button>
           </DialogActions>
         </Dialog>
-        <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)} maxWidth="xs" fullWidth>
-          <DialogTitle>Delete User</DialogTitle>
-          <DialogContent>
-            <Typography>Are you sure you want to delete {selectedUser?.firstname} {selectedUser?.lastname}?</Typography>
+        {/* Delete Dialog */}
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={() => setDeleteDialogOpen(false)}
+          PaperProps={{ sx: { borderRadius: { xs: 0, sm: 2 }, width: { xs: '100%', sm: 360 }, m: 0 } }}
+        >
+          <DialogTitle sx={{ fontWeight: 600, color: '#222' }}>Delete User</DialogTitle>
+          <DialogContent sx={{ bgcolor: '#fff', p: 2 }}>
+            <Typography>Are you sure you want to delete this user?</Typography>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleDeleteUser} variant="contained" color="error">Delete</Button>
+          <DialogActions sx={{ bgcolor: '#fff', px: 2, pb: 2 }}>
+            <Button onClick={() => setDeleteDialogOpen(false)} variant="outlined" sx={{ borderRadius: 2 }}>Cancel</Button>
+            <Button onClick={handleDeleteUser} variant="contained" color="error" sx={{ borderRadius: 2, fontWeight: 500 }}>Delete</Button>
           </DialogActions>
         </Dialog>
-        {/* Remove local Snackbar/Alert, global snackbar will handle alerts */}
-      </Container>
+      </Box>
     </Box>
   );
 };

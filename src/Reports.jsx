@@ -11,6 +11,7 @@ import GroupIcon from '@mui/icons-material/Group';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
 import DiscountIcon from '@mui/icons-material/Percent';
 import AnimatedBackground from './AnimatedBackground';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 const periodOptions = [
   { label: 'Monthly', value: 'monthly' },
@@ -55,6 +56,7 @@ const Reports = () => {
   const [customerTypeCounts, setCustomerTypeCounts] = useState([]);
   const [barangayCounts, setBarangayCounts] = useState([]);
   const [discountedCustomers, setDiscountedCustomers] = useState([]);
+  const isMobile = useMediaQuery('(max-width:600px)');
 
   const fetchReport = async () => {
     setLoading(true);
@@ -117,21 +119,28 @@ const Reports = () => {
   }, [period, customStart, customEnd, paymentStatus]);
 
   return (
-    <Box sx={{ position: 'relative', minHeight: '100vh', p: 0 }}>
-      <AnimatedBackground />
-      <Container maxWidth="lg" sx={{ py: 4, position: 'relative', zIndex: 2 }}>
-        <PageHeader title="Reports" />
-        <Paper sx={{ p: 3, borderRadius: 3, mb: 3 }}>
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" mb={2}>
+    <Box sx={{ minHeight: '100vh', p: { xs: 0, sm: 3 }, bgcolor: '#f7f9fb', width: '100%', overflow: 'hidden' }}>
+      {/* Simple Title Header */}
+      <Box sx={{ py: { xs: 1, sm: 4 }, px: { xs: 1, sm: 2 }, width: '100%' }}>
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h5" sx={{ fontWeight: 600, color: '#22223b', mb: 0.5, fontSize: { xs: 20, sm: 24 } }}>
+            Reports
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            View and export billing and customer statistics
+          </Typography>
+        </Box>
+        <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2, mb: 3, width: '100%', boxShadow: 'none', background: '#fff' }}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="center" mb={2} sx={{ width: '100%' }}>
             <Tabs
               value={period}
               onChange={(_, v) => setPeriod(v)}
               textColor="primary"
               indicatorColor="primary"
-              sx={{ minHeight: 48 }}
+              sx={{ minHeight: 44, width: '100%', maxWidth: { xs: '100%', sm: 400 } }}
             >
               {periodOptions.map(opt => (
-                <Tab key={opt.value} label={opt.label} value={opt.value} sx={{ minHeight: 48 }} />
+                <Tab key={opt.value} label={opt.label} value={opt.value} sx={{ minHeight: 44, fontSize: { xs: 13, sm: 15 } }} />
               ))}
             </Tabs>
             {period === 'custom' && (
@@ -162,11 +171,11 @@ const Reports = () => {
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
               ))}
             </TextField>
-            <Button variant="contained" onClick={fetchReport} disabled={loading}>Refresh</Button>
+            <Button variant="contained" onClick={fetchReport} disabled={loading} sx={{ borderRadius: 2, fontWeight: 500, minWidth: 100 }}>Refresh</Button>
           </Stack>
-          <Grid container spacing={3} sx={{ mb: 2 }}>
+          <Grid container spacing={2} sx={{ mb: 2, width: '100%' }}>
             <Grid item xs={12} sm={4} md={2}>
-              <Paper sx={{ p: 2, borderRadius: 2, background: '#e0f2fe', textAlign: 'center' }}>
+              <Paper sx={{ p: 2, borderRadius: 2, background: '#f1f3f6', textAlign: 'center', boxShadow: 'none' }}>
                 <Typography variant="subtitle2" color="primary">Total Revenue</Typography>
                 <Typography variant="h5" sx={{ fontWeight: 700 }}>
                   ₱{summary.revenue.toLocaleString()}
@@ -174,7 +183,7 @@ const Reports = () => {
               </Paper>
             </Grid>
             <Grid item xs={12} sm={4} md={2}>
-              <Paper sx={{ p: 2, borderRadius: 2, background: '#e0f2fe', textAlign: 'center' }}>
+              <Paper sx={{ p: 2, borderRadius: 2, background: '#f1f3f6', textAlign: 'center', boxShadow: 'none' }}>
                 <Typography variant="subtitle2" color="primary">Total Basic</Typography>
                 <Typography variant="h5" sx={{ fontWeight: 700 }}>
                   ₱{summary.basic?.toLocaleString()}
@@ -182,7 +191,7 @@ const Reports = () => {
               </Paper>
             </Grid>
             <Grid item xs={12} sm={4} md={2}>
-              <Paper sx={{ p: 2, borderRadius: 2, background: '#e0f2fe', textAlign: 'center' }}>
+              <Paper sx={{ p: 2, borderRadius: 2, background: '#f1f3f6', textAlign: 'center', boxShadow: 'none' }}>
                 <Typography variant="subtitle2" color="primary">Total Surcharge</Typography>
                 <Typography variant="h5" sx={{ fontWeight: 700 }}>
                   ₱{summary.surcharge?.toLocaleString()}
@@ -190,7 +199,7 @@ const Reports = () => {
               </Paper>
             </Grid>
             <Grid item xs={12} sm={4} md={2}>
-              <Paper sx={{ p: 2, borderRadius: 2, background: '#e0f2fe', textAlign: 'center' }}>
+              <Paper sx={{ p: 2, borderRadius: 2, background: '#f1f3f6', textAlign: 'center', boxShadow: 'none' }}>
                 <Typography variant="subtitle2" color="primary">Total Discount</Typography>
                 <Typography variant="h5" sx={{ fontWeight: 700 }}>
                   ₱{summary.discount?.toLocaleString()}
@@ -198,7 +207,7 @@ const Reports = () => {
               </Paper>
             </Grid>
             <Grid item xs={12} sm={4} md={2}>
-              <Paper sx={{ p: 2, borderRadius: 2, background: '#e0f2fe', textAlign: 'center' }}>
+              <Paper sx={{ p: 2, borderRadius: 2, background: '#f1f3f6', textAlign: 'center', boxShadow: 'none' }}>
                 <Typography variant="subtitle2" color="primary">Total Advance</Typography>
                 <Typography variant="h5" sx={{ fontWeight: 700 }}>
                   ₱{summary.advance?.toLocaleString()}
@@ -206,7 +215,7 @@ const Reports = () => {
               </Paper>
             </Grid>
             <Grid item xs={12} sm={4} md={2}>
-              <Paper sx={{ p: 2, borderRadius: 2, background: '#e0f2fe', textAlign: 'center' }}>
+              <Paper sx={{ p: 2, borderRadius: 2, background: '#f1f3f6', textAlign: 'center', boxShadow: 'none' }}>
                 <Typography variant="subtitle2" color="primary">Total Cubics Used</Typography>
                 <Typography variant="h5" sx={{ fontWeight: 700 }}>
                   {summary.consumption.toLocaleString()} m³
@@ -216,81 +225,63 @@ const Reports = () => {
           </Grid>
         </Paper>
         {/* Customers Reports Section */}
-        <Paper sx={{ p: 3, borderRadius: 3, mb: 3, background: 'linear-gradient(135deg, #f8fafc 60%, #e0f2fe 100%)' }}>
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, display: 'flex', alignItems: 'center', color: 'primary.main', letterSpacing: 0.5 }}>
-            <BarChartIcon sx={{ mr: 1, color: 'primary.main' }} /> Customer Reports
+        <Paper sx={{ p: 3, borderRadius: 2, mb: 3, background: '#fff', boxShadow: 'none' }}>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 3, color: '#22223b', letterSpacing: 0.5 }}>
+            Customer Reports
           </Typography>
           <Grid container spacing={3}>
             {/* Customers by Type */}
             <Grid item xs={12} md={4}>
-              <Card sx={{ borderRadius: 3, boxShadow: '0 2px 8px rgba(30,58,138,0.06)', minHeight: 220, display: 'flex', flexDirection: 'column' }}>
-                <CardHeader
-                  avatar={<Avatar sx={{ bgcolor: 'primary.main' }}><GroupIcon /></Avatar>}
-                  title={<Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'primary.main' }}>Customers by Type</Typography>}
-                  sx={{ pb: 1 }}
-                />
-                <CardContent sx={{ pt: 0 }}>
-                  {customerTypeCounts.length === 0 ? (
-                    <Typography color="text.secondary">No data</Typography>
-                  ) : (
-                    <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', py: 1 }}>
-                      {customerTypeCounts.map(([type, count]) => (
-                        <Chip key={type} label={`${type}: ${count.toLocaleString()}`} color="primary" variant="outlined" sx={{ fontWeight: 600, fontSize: 15, px: 2 }} />
-                      ))}
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
+              <Paper sx={{ borderRadius: 2, boxShadow: 'none', minHeight: 180, display: 'flex', flexDirection: 'column', p: 2, background: '#f1f3f6' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#22223b', mb: 1 }}>Customers by Type</Typography>
+                {customerTypeCounts.length === 0 ? (
+                  <Typography color="text.secondary">No data</Typography>
+                ) : (
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', py: 1 }}>
+                    {customerTypeCounts.map(([type, count]) => (
+                      <Chip key={type} label={`${type}: ${count.toLocaleString()}`} color="primary" variant="outlined" sx={{ fontWeight: 500, fontSize: 15, px: 2 }} />
+                    ))}
+                  </Box>
+                )}
+              </Paper>
             </Grid>
             {/* Customers by Barangay */}
             <Grid item xs={12} md={4}>
-              <Card sx={{ borderRadius: 3, boxShadow: '0 2px 8px rgba(30,58,138,0.06)', minHeight: 220, display: 'flex', flexDirection: 'column' }}>
-                <CardHeader
-                  avatar={<Avatar sx={{ bgcolor: 'secondary.main' }}><LocationOnIcon /></Avatar>}
-                  title={<Typography variant="subtitle1" sx={{ fontWeight: 700, color: 'secondary.main' }}>Customers by Barangay</Typography>}
-                  sx={{ pb: 1 }}
-                />
-                <CardContent sx={{ pt: 0 }}>
-                  {barangayCounts.length === 0 ? (
-                    <Typography color="text.secondary">No data</Typography>
-                  ) : (
-                    <Box sx={{ display: 'flex', gap: 1, overflowX: 'auto', py: 1 }}>
-                      {barangayCounts.map(([barangay, count]) => (
-                        <Chip key={barangay} label={`${barangay}: ${count.toLocaleString()}`} color="secondary" variant="outlined" sx={{ fontWeight: 600, fontSize: 15, px: 2 }} />
-                      ))}
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
+              <Paper sx={{ borderRadius: 2, boxShadow: 'none', minHeight: 180, display: 'flex', flexDirection: 'column', p: 2, background: '#f1f3f6' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#22223b', mb: 1 }}>Customers by Barangay</Typography>
+                {barangayCounts.length === 0 ? (
+                  <Typography color="text.secondary">No data</Typography>
+                ) : (
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', py: 1 }}>
+                    {barangayCounts.map(([barangay, count]) => (
+                      <Chip key={barangay} label={`${barangay}: ${count.toLocaleString()}`} color="secondary" variant="outlined" sx={{ fontWeight: 500, fontSize: 15, px: 2 }} />
+                    ))}
+                  </Box>
+                )}
+              </Paper>
             </Grid>
             {/* Customers with Active Discount */}
             <Grid item xs={12} md={4}>
-              <Card sx={{ borderRadius: 3, boxShadow: '0 2px 8px rgba(30,58,138,0.06)', minHeight: 220, display: 'flex', flexDirection: 'column' }}>
-                <CardHeader
-                  avatar={<Avatar sx={{ bgcolor: '#f59e0b' }}><DiscountIcon /></Avatar>}
-                  title={<Typography variant="subtitle1" sx={{ fontWeight: 700, color: '#f59e0b' }}>Customers with Active Discount</Typography>}
-                  sx={{ pb: 1 }}
-                />
-                <CardContent sx={{ pt: 0 }}>
-                  <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: '#f59e0b' }}>
-                    {discountedCustomers.length.toLocaleString()}
-                  </Typography>
-                  {discountedCustomers.length > 0 && (
-                    <Box sx={{ maxHeight: 100, overflowY: 'auto', pr: 1 }}>
-                      {discountedCustomers.slice(0, 10).map(c => (
-                        <Typography key={c.customerid} variant="body2" sx={{ fontSize: 15, mb: 0.5, color: 'text.secondary' }}>
-                          {c.name} <span style={{ color: '#64748b' }}>({c.barangay})</span> - <b>{c.discount}%</b>
-                        </Typography>
-                      ))}
-                      {discountedCustomers.length > 10 && <Typography variant="body2" sx={{ color: 'text.secondary' }}>...and {discountedCustomers.length - 10} more</Typography>}
-                    </Box>
-                  )}
-                </CardContent>
-              </Card>
+              <Paper sx={{ borderRadius: 2, boxShadow: 'none', minHeight: 180, display: 'flex', flexDirection: 'column', p: 2, background: '#f1f3f6' }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#22223b', mb: 1 }}>Customers with Active Discount</Typography>
+                <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, color: '#f59e0b' }}>
+                  {discountedCustomers.length.toLocaleString()}
+                </Typography>
+                {discountedCustomers.length > 0 && (
+                  <Box sx={{ maxHeight: 100, overflowY: 'auto', pr: 1 }}>
+                    {discountedCustomers.slice(0, 10).map(c => (
+                      <Typography key={c.customerid} variant="body2" sx={{ fontSize: 15, mb: 0.5, color: 'text.secondary' }}>
+                        {c.name} <span style={{ color: '#64748b' }}>({c.barangay})</span> - <b>{c.discount}%</b>
+                      </Typography>
+                    ))}
+                    {discountedCustomers.length > 10 && <Typography variant="body2" sx={{ color: 'text.secondary' }}>...and {discountedCustomers.length - 10} more</Typography>}
+                  </Box>
+                )}
+              </Paper>
             </Grid>
           </Grid>
         </Paper>
-      </Container>
+      </Box>
     </Box>
   );
 };

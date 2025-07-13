@@ -208,154 +208,86 @@ const Schedule = () => {
   );
 
   return (
-    <Box sx={{ p: 0, minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
-      {/* Animated background */}
-      <div className="schedule-bg">
-        <div className="schedule-waves">
-          <div className="schedule-wave schedule-wave1"></div>
-          <div className="schedule-wave schedule-wave2"></div>
-          <div className="schedule-wave schedule-wave3"></div>
-        </div>
-      </div>
-      <Box sx={{ position: 'relative', zIndex: 2, p: { xs: 1, md: 3 } }}>
-        <div className="schedule-card">
-          <div className="schedule-header">
-            <CalendarTodayIcon className="schedule-icon" />
-            Collection Schedule
-          </div>
-          <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2 }}>
-            <Tab label="Current Schedule" />
-            <Tab label="History" />
-          </Tabs>
-          {tab === 0 && (
-            <>
-              <div className="schedule-subtitle">
-                Generate and view collection schedules for all collectors
-              </div>
-              <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: '#0284c7' }}>
-                For {now.toLocaleString(undefined, { month: 'long' })} {scheduleYear}
-              </Typography>
-              <div style={{ marginBottom: 24 }}>
-                <Stack direction="row" alignItems="center" gap={2}>
-                  <GroupIcon sx={{ color: '#0ea5e9', fontSize: 28 }} />
-                  <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b' }}>
-                    Collectors
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#64748b', fontWeight: 500 }}>
-                    ({collectors.length} found)
-                  </Typography>
-                </Stack>
-              </div>
-              {loading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
-              ) : collectors.length === 0 ? (
-                <Typography>No collectors found.</Typography>
-              ) : (
-                <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 0, background: 'transparent', mb: 3 }}>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Name</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {collectors.map(c => (
-                        <TableRow key={c.userid}>
-                          <TableCell>{c.firstname} {c.lastname}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              )}
-              {schedule.length > 0 && (
-                <div className="schedule-table">
-                  <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 0, background: 'transparent' }}>
-                    <Table>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Date</TableCell>
-                          <TableCell>Barangay</TableCell>
-                          <TableCell>Collector</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {schedule.map((s, i) => (
-                          <TableRow key={i}>
-                            <TableCell>{formatDateWithDay(s.date)}</TableCell>
-                            <TableCell>{s.barangay}</TableCell>
-                            <TableCell>{s.collector_name || '-'}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </div>
-              )}
-              {/* Floating Action Button for Generate Schedule */}
-              <div className="schedule-fab" title="Generate Collection Schedule" onClick={handleGenerateSchedule} style={{ pointerEvents: loading || collectors.length === 0 || generating ? 'none' : 'auto', opacity: loading || collectors.length === 0 || generating ? 0.6 : 1 }}>
-                <CalendarTodayIcon fontSize="inherit" />
-              </div>
-            </>
-          )}
-          {tab === 1 && (
-            <div className="schedule-table">
-              <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: '#0284c7' }}>
-                Schedule History
-              </Typography>
-              <Stack direction="row" gap={2} sx={{ mb: 2 }}>
-                <FormControl size="small" sx={{ minWidth: 120 }}>
-                  <InputLabel>Month</InputLabel>
-                  <Select
-                    value={historyMonth}
-                    label="Month"
-                    onChange={e => setHistoryMonth(e.target.value)}
-                  >
-                    <MenuItem value="all">All</MenuItem>
-                    {monthOptions.map(m => (
-                      <MenuItem key={m} value={m}>{new Date(0, m - 1).toLocaleString(undefined, { month: 'long' })}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl size="small" sx={{ minWidth: 120 }}>
-                  <InputLabel>Year</InputLabel>
-                  <Select
-                    value={historyYear}
-                    label="Year"
-                    onChange={e => setHistoryYear(e.target.value)}
-                  >
-                    <MenuItem value="all">All</MenuItem>
-                    {yearOptions.map(y => (
-                      <MenuItem key={y} value={y}>{y}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Stack>
-              <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 0, background: 'transparent' }}>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Month</TableCell>
-                      <TableCell>Date</TableCell>
-                      <TableCell>Barangay</TableCell>
-                      <TableCell>Collector</TableCell>
+    <Box sx={{ minHeight: '100vh', p: { xs: 1, sm: 3 }, bgcolor: '#f7f7f7', width: '100%', overflow: 'hidden' }}>
+      <Box sx={{ maxWidth: 1200, mx: 'auto', width: '100%' }}>
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="h5" fontWeight={600} sx={{ mb: 0.5, color: '#222' }}>Schedule</Typography>
+          <Typography variant="body2" sx={{ color: '#666' }}>Manage and view collector schedules</Typography>
+        </Box>
+        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }} justifyContent="space-between" sx={{ mb: 2 }}>
+          <Button variant="contained" onClick={handleGenerateSchedule} sx={{ borderRadius: 2, minWidth: 120, width: { xs: '100%', sm: 'auto' }, fontWeight: 500 }} disabled={generating || loading}>Generate Schedule</Button>
+        </Stack>
+        <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: 2, boxShadow: 'none', mb: 2 }}>
+          <TableContainer sx={{ maxHeight: { xs: 440, sm: 600 }, overflowX: 'auto' }}>
+            <Table stickyHeader size="small" sx={{ minWidth: 650 }}>
+              <TableHead>
+                <TableRow sx={{ bgcolor: '#f0f0f0' }}>
+                  <TableCell sx={{ fontWeight: 600, color: '#333', borderBottom: '1px solid #e0e0e0' }}>Date</TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#333', borderBottom: '1px solid #e0e0e0' }}>Barangay</TableCell>
+                  <TableCell sx={{ fontWeight: 600, color: '#333', borderBottom: '1px solid #e0e0e0' }}>Collector</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={3} align="center"><CircularProgress size={24} /></TableCell>
+                  </TableRow>
+                ) : schedule.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={3} align="center">No schedule found.</TableCell>
+                  </TableRow>
+                ) : (
+                  schedule.map((row, idx) => (
+                    <TableRow key={row.date + row.barangay} sx={{ bgcolor: idx % 2 === 0 ? '#fff' : '#f8f8f8', '&:last-child td': { borderBottom: 0 } }}>
+                      <TableCell>{formatDateWithDay(row.date)}</TableCell>
+                      <TableCell>{row.barangay}</TableCell>
+                      <TableCell>{row.collector_name}</TableCell>
                     </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {filteredHistory.map((h, i) => (
-                      <TableRow key={i}>
-                        <TableCell>{`${h.year}-${String(h.month).padStart(2, '0')}`}</TableCell>
-                        <TableCell>{formatDateWithDay(h.date)}</TableCell>
-                        <TableCell>{h.barangay}</TableCell>
-                        <TableCell>{h.collector_name || '-'}</TableCell>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Paper>
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="h6" fontWeight={600} sx={{ mb: 1, color: '#222' }}>Schedule History</Typography>
+          <Paper sx={{ width: '100%', overflow: 'hidden', borderRadius: 2, boxShadow: 'none', mb: 2 }}>
+            <TableContainer sx={{ maxHeight: { xs: 440, sm: 600 }, overflowX: 'auto' }}>
+              <Table stickyHeader size="small" sx={{ minWidth: 650 }}>
+                <TableHead>
+                  <TableRow sx={{ bgcolor: '#f0f0f0' }}>
+                    <TableCell sx={{ fontWeight: 600, color: '#333', borderBottom: '1px solid #e0e0e0' }}>Month</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#333', borderBottom: '1px solid #e0e0e0' }}>Year</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#333', borderBottom: '1px solid #e0e0e0' }}>Date</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#333', borderBottom: '1px solid #e0e0e0' }}>Barangay</TableCell>
+                    <TableCell sx={{ fontWeight: 600, color: '#333', borderBottom: '1px solid #e0e0e0' }}>Collector</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center"><CircularProgress size={24} /></TableCell>
+                    </TableRow>
+                  ) : history.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} align="center">No history found.</TableCell>
+                    </TableRow>
+                  ) : (
+                    history.map((row, idx) => (
+                      <TableRow key={row.id || row.date + row.barangay + row.collector_id} sx={{ bgcolor: idx % 2 === 0 ? '#fff' : '#f8f8f8', '&:last-child td': { borderBottom: 0 } }}>
+                        <TableCell>{row.month}</TableCell>
+                        <TableCell>{row.year}</TableCell>
+                        <TableCell>{formatDateWithDay(row.date)}</TableCell>
+                        <TableCell>{row.barangay}</TableCell>
+                        <TableCell>{row.collector_name}</TableCell>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </div>
-          )}
-        </div>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        </Box>
       </Box>
     </Box>
   );

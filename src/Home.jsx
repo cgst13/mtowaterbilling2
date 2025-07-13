@@ -19,6 +19,7 @@ import { useNavigate } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import PageHeader from './PageHeader';
 import AnimatedBackground from './AnimatedBackground';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 const drawerWidth = 280;
 
@@ -43,25 +44,36 @@ const Main = styled('main', { shouldForwardProp: (prop) => prop !== 'open' })(
   }),
 );
 
+const fontFamily = 'Inter, Montserrat, Roboto, Arial, sans-serif';
+const accentColor = '#06b6d4';
+const cardShadow = '0 4px 32px 0 rgba(30,58,138,0.08)';
+const glassBg = 'rgba(255,255,255,0.85)';
+
 const StatsCard = styled(Card)(({ theme }) => ({
   background: 'linear-gradient(135deg, #e0f7ff 0%, #cce7ff 100%)',
   color: '#1e293b',
   height: '100%',
-  transition: 'transform 0.2s ease-in-out',
+  borderRadius: 18,
+  boxShadow: cardShadow,
+  fontFamily,
+  transition: 'transform 0.2s, box-shadow 0.2s',
   '&:hover': {
-    transform: 'translateY(-4px)',
-    boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+    transform: 'translateY(-6px) scale(1.03)',
+    boxShadow: '0 8px 32px 0 #06b6d422',
   },
 }));
 
 const ActionCard = styled(Card)(({ theme }) => ({
   height: '100%',
-  transition: 'all 0.2s ease-in-out',
+  borderRadius: 16,
+  boxShadow: cardShadow,
+  fontFamily,
+  transition: 'all 0.2s',
   border: '1px solid #e2e8f0',
   '&:hover': {
-    transform: 'translateY(-2px)',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-    borderColor: '#4f46e5',
+    transform: 'translateY(-4px) scale(1.02)',
+    boxShadow: '0 8px 32px 0 #06b6d422',
+    borderColor: accentColor,
   },
 }));
 
@@ -112,6 +124,10 @@ const Home = () => {
   const [isStable, setIsStable] = useState(true);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [mySchedule, setMySchedule] = useState([]);
+  const isMobile = useMediaQuery('(max-width:600px)');
+  const [revenueData, setRevenueData] = useState([]);
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [uncollectedRevenue, setUncollectedRevenue] = useState(0);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -188,9 +204,12 @@ const Home = () => {
       const monthlyRevenue = paidBills && paidBills.length > 0
         ? paidBills.reduce((sum, b) => sum + (Number(b.totalbillamount) || 0), 0)
         : 0;
-      // Water Consumption (sum of consumption for Paid bills this month)
-      const waterConsumption = paidBills && paidBills.length > 0
-        ? paidBills.reduce((sum, b) => sum + (Number(b.consumption) || 0), 0)
+      // Water Consumption (sum of consumption for ALL bills, regardless of status)
+      const { data: allBills, error: allBillsError } = await supabase
+        .from('bills')
+        .select('consumption');
+      const waterConsumption = allBills && allBills.length > 0
+        ? allBills.reduce((sum, b) => sum + (Number(b.consumption) || 0), 0)
         : 0;
       // Pending Bills (count of bills not Paid)
       const { count: pendingBills } = await supabase
@@ -257,9 +276,61 @@ const Home = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const fetchRevenueTrend = async () => {
+      const { data: bills, error } = await supabase
+        .from('bills')
+        .select('billedmonth, totalbillamount, paymentstatus')
+        .eq('paymentstatus', 'Paid');
+      if (error) {
+        setRevenueData([]);
+        return;
+      }
+      const monthly = {};
+      bills.forEach(bill => {
+        if (!bill.billedmonth) return;
+        const month = bill.billedmonth.slice(0, 7); // 'YYYY-MM'
+        if (!monthly[month]) monthly[month] = 0;
+        monthly[month] += Number(bill.totalbillamount) || 0;
+      });
+      const months = Object.keys(monthly).sort();
+      const chartData = months.map(month => ({
+        month: new Date(month + '-01').toLocaleString('default', { month: 'short', year: '2-digit' }),
+        revenue: monthly[month]
+      }));
+      setRevenueData(chartData);
+    };
+    fetchRevenueTrend();
+  }, []);
+
+  useEffect(() => {
+    const fetchRevenueStats = async () => {
+      // Total Revenue (Paid)
+      const { data: paidBills, error: paidError } = await supabase
+        .from('bills')
+        .select('totalbillamount')
+        .eq('paymentstatus', 'Paid');
+      const total = paidBills && paidBills.length > 0
+        ? paidBills.reduce((sum, b) => sum + (Number(b.totalbillamount) || 0), 0)
+        : 0;
+      setTotalRevenue(total);
+      // Uncollected Revenue (Unpaid)
+      const { data: unpaidBills, error: unpaidError } = await supabase
+        .from('bills')
+        .select('totalbillamount')
+        .eq('paymentstatus', 'Unpaid');
+      const uncollected = unpaidBills && unpaidBills.length > 0
+        ? unpaidBills.reduce((sum, b) => sum + (Number(b.totalbillamount) || 0), 0)
+        : 0;
+      setUncollectedRevenue(uncollected);
+    };
+    fetchRevenueStats();
+  }, []);
+
   const statsData = [
     { title: 'Total Customers', value: stats.totalCustomers, icon: <PeopleIcon />, color: '#4f46e5', format: v => v?.toLocaleString() },
-    { title: 'Monthly Revenue', value: stats.monthlyRevenue, icon: <MoneyIcon />, color: '#059669', format: v => v != null ? `₱${Number(v).toLocaleString()}` : '' },
+    { title: 'Total Revenue', value: totalRevenue, icon: <MoneyIcon />, color: '#059669', format: v => v != null ? `₱${Number(v).toLocaleString()}` : '' },
+    { title: 'Uncollected Revenue', value: uncollectedRevenue, icon: <MoneyIcon />, color: '#f87171', format: v => v != null ? `₱${Number(v).toLocaleString()}` : '' },
     { title: 'Water Consumption', value: stats.waterConsumption, icon: <WaterIcon />, color: '#0ea5e9', format: v => v != null ? `${Number(v).toLocaleString()} L` : '' },
     { title: 'Pending Bills', value: stats.pendingBills, icon: <ReceiptIcon />, color: '#f59e0b', format: v => v?.toLocaleString() },
   ];
@@ -269,21 +340,6 @@ const Home = () => {
     { title: 'Generate Bills', description: 'Create monthly billing statements', color: '#059669', route: '/billing' },
     { title: 'Process Payment', description: 'Record customer payments', color: '#0ea5e9', route: '/payments' },
     { title: 'View Reports', description: 'Access detailed analytics and reports', color: '#8b5cf6', route: '/reports' },
-  ];
-
-  const revenueData = [
-    { month: 'Jan', revenue: 102000 },
-    { month: 'Feb', revenue: 110500 },
-    { month: 'Mar', revenue: 120000 },
-    { month: 'Apr', revenue: 115000 },
-    { month: 'May', revenue: 123000 },
-    { month: 'Jun', revenue: 130000 },
-    { month: 'Jul', revenue: 128000 },
-    { month: 'Aug', revenue: 135000 },
-    { month: 'Sep', revenue: 140000 },
-    { month: 'Oct', revenue: 138000 },
-    { month: 'Nov', revenue: 145000 },
-    { month: 'Dec', revenue: 152000 },
   ];
 
   const menuItems = [
@@ -296,185 +352,196 @@ const Home = () => {
   ];
 
   return (
-    <Box sx={{ display: 'flex', position: 'relative', minHeight: '100vh', p: 0 }}>
+    <Box sx={{ display: 'flex', position: 'relative', minHeight: '100vh', p: 0, width: '100%', fontFamily, background: 'linear-gradient(120deg, #f8fafc 60%, #e0f2fe 100%)' }}>
       <AnimatedBackground />
       <CssBaseline />
       {/* Remove AppBar, Drawer, and sidebar rendering. */}
       {/* Only render the dashboard cards, quick actions, etc. */}
-      <Container maxWidth="xl" sx={{ mt: 3, mb: 4, position: 'relative', zIndex: 2 }}>
+      <Container maxWidth={false} sx={{ mt: { xs: 1, sm: 3 }, mb: { xs: 2, sm: 4 }, position: 'relative', zIndex: 2, px: { xs: 1, sm: 2 }, width: '100%' }}>
         <PageHeader
-          title="Dashboard Overview"
-          subtitle="LGU Concepcion, Romblon - Water Billing Management System"
+          title={<span style={{ fontWeight: 800, color: '#1e3a8a', fontFamily, fontSize: '2.2rem', letterSpacing: 0.5 }}>Dashboard Overview</span>}
+          subtitle={<span style={{ color: '#64748b', fontWeight: 500, fontFamily, fontSize: '1.1rem' }}>LGU Concepcion, Romblon - Water Billing Management System</span>}
           actions={
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 2 } }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 {isOnline ? (
                   <CheckCircleIcon sx={{ color: 'success.main' }} />
                 ) : (
                   <CancelIcon sx={{ color: 'grey.500' }} />
                 )}
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, fontSize: { xs: 12, sm: 14 }, fontFamily }}>
                   System {isOnline ? 'Online' : 'Offline'}
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, fontSize: { xs: 12, sm: 14 }, fontFamily }}>
                   {speedMbps !== null ? `${speedMbps.toFixed(1)} Mbps` : 'N/A'}
                 </Typography>
                 <Chip
                   label={isStable ? 'Stable' : 'Unstable'}
                   color={isStable ? 'success' : 'warning'}
                   size="small"
-                  sx={{ fontWeight: 600 }}
+                  sx={{ fontWeight: 600, fontFamily }}
                 />
               </Box>
             </Box>
           }
         />
-
-          {/* Stats Cards */}
-          <Grid container spacing={3} sx={{ mb: 4 }}>
-            {loadingStats
-              ? Array.from({ length: 4 }).map((_, i) => (
-                  <Grid item xs={12} sm={6} md={3} key={i}>
-                    <Card sx={{ p: 3, borderRadius: 3 }}>
-                      <Skeleton variant="rectangular" height={120} animation="wave" />
-                    </Card>
-                  </Grid>
-                ))
-              : statsData.map((stat, index) => (
-                  <Grid item xs={12} sm={6} md={3} key={index}>
-                    <StatsCard>
-                      <CardContent sx={{ p: 3 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                          <Box sx={{ 
-                            backgroundColor: 'rgba(255,255,255,0.2)', 
-                            borderRadius: 2, 
-                            p: 1.5,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: 32,
-                          }}>
-                            {stat.icon}
-                          </Box>
-                          <TrendingUpIcon sx={{ opacity: 0.7 }} />
-                        </Box>
-                        <Typography variant="h4" sx={{ fontWeight: 700, mb: 1, fontSize: { xs: '2rem', md: '2.5rem' } }}>
-                          {stat.format ? stat.format(stat.value) : <AnimatedNumber value={stat.value} />}
-                        </Typography>
-                        <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                          {stat.title}
-                        </Typography>
-                      </CardContent>
-                    </StatsCard>
-                  </Grid>
-                ))}
-          </Grid>
-
-          {/* Revenue Trend Chart */}
-          <Paper elevation={3} sx={{ mb: 4, p: 3, borderRadius: 3 }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: 'primary.main' }}>
-              Monthly Revenue Trend
-            </Typography>
-            {loading ? (
-              <Skeleton variant="rectangular" height={320} animation="wave" />
-            ) : (
-              <ResponsiveContainer width="100%" height={320}>
-                <LineChart data={revenueData} margin={{ top: 16, right: 32, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" tick={{ fontWeight: 600, fill: '#64748b' }} />
-                  <YAxis tickFormatter={v => `₱${(v/1000).toFixed(0)}k`} tick={{ fontWeight: 600, fill: '#64748b' }} />
-                  <Tooltip formatter={v => `₱${v.toLocaleString()}`} />
-                  <Legend />
-                  <Line type="monotone" dataKey="revenue" stroke="#06b6d4" strokeWidth={3} dot={{ r: 5 }} activeDot={{ r: 8 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </Paper>
-
-          {/* Quick Actions */}
-          <Box sx={{ mb: 4 }}>
-            <Typography variant="h5" sx={{ fontWeight: 600, color: '#1e293b', mb: 3 }}>
-              Quick Actions
-            </Typography>
-            <Grid container spacing={3}>
-              {quickActions.map((action, index) => (
+        {/* Stats Cards */}
+        <Grid container spacing={{ xs: 2, sm: 3 }} sx={{ mb: { xs: 2, sm: 4 }, width: '100%' }}>
+          {loadingStats
+            ? Array.from({ length: 4 }).map((_, i) => (
+                <Grid item xs={12} sm={6} md={3} key={i}>
+                  <Card sx={{ p: { xs: 2, sm: 3 }, borderRadius: 3, boxShadow: cardShadow }}>
+                    <Skeleton variant="rectangular" height={100} animation="wave" />
+                  </Card>
+                </Grid>
+              ))
+            : statsData.map((stat, index) => (
                 <Grid item xs={12} sm={6} md={3} key={index}>
-                  <ActionCard>
-                    <CardContent sx={{ p: 3, textAlign: 'center' }}>
-                      <Box 
-                        sx={{ 
-                          width: 60, 
-                          height: 60, 
-                          borderRadius: '50%', 
-                          backgroundColor: `${action.color}15`,
+                  <StatsCard>
+                    <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                        <Box sx={{ 
+                          backgroundColor: 'rgba(255,255,255,0.5)', 
+                          borderRadius: 2, 
+                          p: 1.5,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          margin: '0 auto 16px auto'
-                        }}
-                      >
-                        <Box sx={{ color: action.color, fontSize: 24 }}>
-                          {index === 0 && <PeopleIcon />}
-                          {index === 1 && <ReceiptIcon />}
-                          {index === 2 && <PaymentIcon />}
-                          {index === 3 && <AnalyticsIcon />}
+                          fontSize: 32,
+                          boxShadow: '0 2px 8px #06b6d422',
+                        }}>
+                          {stat.icon}
                         </Box>
+                        <TrendingUpIcon sx={{ opacity: 0.7, color: accentColor }} />
                       </Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 1, color: '#1e293b' }}>
-                        {action.title}
+                      <Typography variant="h4" sx={{ fontWeight: 800, mb: 1, fontSize: { xs: '1.7rem', md: '2.5rem' }, fontFamily, color: '#1e293b' }}>
+                        {stat.format ? stat.format(stat.value) : <AnimatedNumber value={stat.value} />}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#64748b', mb: 2 }}>
-                        {action.description}
+                      <Typography variant="body2" sx={{ opacity: 0.9, fontSize: { xs: 13, sm: 15 }, fontFamily }}>
+                        {stat.title}
                       </Typography>
-                      <Button 
-                        variant="outlined" 
-                        size="small"
-                        sx={{ 
-                          borderColor: action.color,
-                          color: action.color,
-                          '&:hover': {
-                            backgroundColor: `${action.color}10`,
-                            borderColor: action.color
-                          }
-                        }}
-                        onClick={() => navigate(action.route)}
-                      >
-                        Get Started
-                      </Button>
                     </CardContent>
-                  </ActionCard>
+                  </StatsCard>
                 </Grid>
               ))}
-            </Grid>
-          </Box>
-
-          {/* Recent Activity */}
-          <Paper sx={{ p: 3, borderRadius: 3, border: '1px solid #e2e8f0' }}>
-            <Typography variant="h5" sx={{ fontWeight: 600, color: '#1e293b', mb: 3 }}>
-              Recent Activity
+        </Grid>
+        {/* Revenue Trend Chart */}
+        <Paper elevation={3} sx={{ mb: { xs: 2, sm: 4 }, p: { xs: 2, sm: 3 }, borderRadius: 4, width: '100%', boxShadow: cardShadow, background: glassBg }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, mb: 2, color: accentColor, fontSize: { xs: 16, sm: 20 }, fontFamily }}>
+            Monthly Revenue Trend
+          </Typography>
+          {loading ? (
+            <Skeleton variant="rectangular" height={220} animation="wave" />
+          ) : (
+            <ResponsiveContainer width="100%" height={isMobile ? 200 : 320}>
+              <LineChart data={revenueData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" tick={{ fontWeight: 600, fill: '#64748b', fontSize: isMobile ? 10 : 12, fontFamily }} />
+                <YAxis tickFormatter={v => `₱${(v/1000).toFixed(0)}k`} tick={{ fontWeight: 600, fill: '#64748b', fontSize: isMobile ? 10 : 12, fontFamily }} />
+                <Tooltip formatter={v => `₱${v.toLocaleString()}`} />
+                <Legend />
+                <Line type="monotone" dataKey="revenue" stroke={accentColor} strokeWidth={3} dot={{ r: 5 }} activeDot={{ r: 8 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </Paper>
+        {/* Quick Actions */}
+        <Box sx={{ mb: { xs: 2, sm: 4 }, width: '100%' }}>
+          <Typography variant="h5" sx={{ fontWeight: 700, color: '#1e3a8a', mb: 2, fontSize: { xs: 16, sm: 22 }, fontFamily }}>
+            Quick Actions
+          </Typography>
+          <Grid container spacing={{ xs: 2, sm: 3 }}>
+            {quickActions.map((action, index) => (
+              <Grid item xs={12} sm={6} md={3} key={index}>
+                <ActionCard>
+                  <CardContent sx={{ p: { xs: 2, sm: 3 }, textAlign: 'center' }}>
+                    <Box 
+                      sx={{ 
+                        width: 60, 
+                        height: 60, 
+                        borderRadius: '50%', 
+                        backgroundColor: `${action.color}15`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 16px auto',
+                        boxShadow: '0 2px 8px #06b6d422',
+                      }}
+                    >
+                      <Box sx={{ color: action.color, fontSize: 28 }}>
+                        {index === 0 && <PeopleIcon />}
+                        {index === 1 && <ReceiptIcon />}
+                        {index === 2 && <PaymentIcon />}
+                        {index === 3 && <AnalyticsIcon />}
+                      </Box>
+                    </Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 1, color: '#1e293b', fontSize: { xs: 15, sm: 18 }, fontFamily }}>
+                      {action.title}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#64748b', mb: 2, fontSize: { xs: 12, sm: 14 }, fontFamily }}>
+                      {action.description}
+                    </Typography>
+                    <Button 
+                      variant="outlined" 
+                      size="small"
+                      sx={{ 
+                        borderColor: action.color,
+                        color: action.color,
+                        minHeight: 44,
+                        px: 2,
+                        fontSize: { xs: 13, sm: 15 },
+                        fontWeight: 700,
+                        fontFamily,
+                        borderRadius: 2,
+                        boxShadow: '0 1px 4px #06b6d422',
+                        '&:hover': {
+                          backgroundColor: `${action.color}10`,
+                          borderColor: action.color
+                        }
+                      }}
+                      onClick={() => navigate(action.route)}
+                    >
+                      Get Started
+                    </Button>
+                  </CardContent>
+                </ActionCard>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+        {/* Recent Activity */}
+        <Paper sx={{ p: { xs: 2, sm: 3 }, borderRadius: 4, border: '1px solid #e2e8f0', width: '100%', boxShadow: cardShadow, background: glassBg }}>
+          <Typography variant="h5" sx={{ fontWeight: 700, color: '#1e3a8a', mb: 2, fontSize: { xs: 16, sm: 22 }, fontFamily }}>
+            Recent Activity
+          </Typography>
+          <Box sx={{ textAlign: 'center', py: { xs: 2, sm: 4 } }}>
+            <Typography variant="body1" sx={{ color: '#64748b', fontSize: { xs: 13, sm: 16 }, fontFamily }}>
+              No recent activity to display. Start by adding customers or processing payments.
             </Typography>
-            <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Typography variant="body1" sx={{ color: '#64748b' }}>
-                No recent activity to display. Start by adding customers or processing payments.
-              </Typography>
-              <Button 
-                variant="contained" 
-                sx={{ 
-                  mt: 2,
-                  background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #4338ca, #6d28d9)',
-                  }
-                }}
-              >
-                View All Activities
-              </Button>
-            </Box>
-          </Paper>
-        </Container>
-      <Dialog open={scheduleDialogOpen} onClose={() => setScheduleDialogOpen(false)} maxWidth="sm" fullWidth
+            <Button 
+              variant="contained" 
+              sx={{ 
+                mt: 2,
+                minHeight: 44,
+                fontSize: { xs: 13, sm: 15 },
+                fontWeight: 700,
+                fontFamily,
+                background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
+                borderRadius: 2,
+                boxShadow: '0 2px 8px #4f46e522',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #4338ca, #6d28d9)',
+                }
+              }}
+            >
+              View All Activities
+            </Button>
+          </Box>
+        </Paper>
+      </Container>
+      <Dialog open={scheduleDialogOpen} onClose={() => setScheduleDialogOpen(false)} maxWidth="sm" fullWidth fullScreen={isMobile}
         PaperProps={{
           sx: {
             background: 'rgba(255,255,255,0.7)',
@@ -488,43 +555,45 @@ const Home = () => {
         }}
       >
         <DialogTitle sx={{
-          display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700, fontSize: 22,
+          display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700, fontSize: { xs: 18, sm: 22 },
           color: '#0284c7',
           background: 'linear-gradient(90deg, #38bdf8 0%, #0ea5e9 100%)',
           WebkitBackgroundClip: 'text',
           WebkitTextFillColor: 'transparent',
           pb: 1.5
         }}>
-          <CalendarTodayIcon sx={{ color: '#0ea5e9', fontSize: 32, mr: 1, filter: 'drop-shadow(0 2px 8px #38bdf8aa)' }} />
+          <CalendarTodayIcon sx={{ color: '#0ea5e9', fontSize: { xs: 24, sm: 32 }, mr: 1, filter: 'drop-shadow(0 2px 8px #38bdf8aa)' }} />
           Your Collection Schedule for This Month
         </DialogTitle>
         <DialogContent sx={{ mt: 1, p: 0 }}>
           {mySchedule.length > 0 ? (
             <TableContainer component={Paper} sx={{
               mt: 2, mb: 2, boxShadow: '0 2px 12px 0 #0ea5e91a', borderRadius: 3, background: 'rgba(255,255,255,0.85)',
-              animation: 'fadeInTable 0.8s cubic-bezier(.4,0,.2,1)'
+              animation: 'fadeInTable 0.8s cubic-bezier(.4,0,.2,1)',
+              overflowX: 'auto',
+              minWidth: 0
             }}>
-              <Table>
+              <Table size={isMobile ? 'small' : 'medium'}>
                 <TableHead>
                   <TableRow sx={{ background: 'linear-gradient(90deg, #bae6fd 0%, #e0f2fe 100%)' }}>
-                    <TableCell sx={{ fontWeight: 700, color: '#0284c7', fontSize: 16 }}>Date</TableCell>
-                    <TableCell sx={{ fontWeight: 700, color: '#0284c7', fontSize: 16 }}>Barangay</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: '#0284c7', fontSize: { xs: 13, sm: 16 } }}>Date</TableCell>
+                    <TableCell sx={{ fontWeight: 700, color: '#0284c7', fontSize: { xs: 13, sm: 16 } }}>Barangay</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {mySchedule.map((s, i) => (
                     <TableRow key={i} sx={{ transition: 'background 0.3s', '&:hover': { background: '#e0f2fe' } }}>
-                      <TableCell sx={{ fontWeight: 600, color: '#0ea5e9', fontSize: 15 }}>
+                      <TableCell sx={{ fontWeight: 600, color: '#0ea5e9', fontSize: { xs: 12, sm: 15 } }}>
                         {new Date(s.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 600, color: '#1e293b', fontSize: 15 }}>{s.barangay}</TableCell>
+                      <TableCell sx={{ fontWeight: 600, color: '#1e293b', fontSize: { xs: 12, sm: 15 } }}>{s.barangay}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </TableContainer>
           ) : (
-            <Box sx={{ p: 3, textAlign: 'center', color: '#64748b', fontWeight: 500 }}>No schedule found for this month.</Box>
+            <Box sx={{ p: 3, textAlign: 'center', color: '#64748b', fontWeight: 500, fontSize: { xs: 13, sm: 15 } }}>No schedule found for this month.</Box>
           )}
         </DialogContent>
         <DialogActions sx={{ justifyContent: 'center', pb: 2 }}>
@@ -532,6 +601,8 @@ const Home = () => {
             background: 'linear-gradient(90deg, #38bdf8 0%, #0ea5e9 100%)',
             color: '#fff', fontWeight: 700, px: 4, borderRadius: 2,
             boxShadow: '0 2px 8px 0 #0ea5e955',
+            minHeight: 44,
+            fontSize: { xs: 13, sm: 15 },
             '&:hover': { background: 'linear-gradient(90deg, #0ea5e9 0%, #38bdf8 100%)' }
           }}>Close</Button>
         </DialogActions>

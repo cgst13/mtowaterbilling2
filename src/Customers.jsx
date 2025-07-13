@@ -9,6 +9,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import PageHeader from './PageHeader';
 import { useGlobalSnackbar } from './GlobalSnackbar';
 import AnimatedBackground from './AnimatedBackground';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 // Remove static barangayList
 // const barangayList = [
@@ -65,6 +66,7 @@ const Customers = () => {
   const [customerToDelete, setCustomerToDelete] = useState(null);
   const [sortOption, setSortOption] = useState('name_asc'); // Added sort option
   const [totalCount, setTotalCount] = useState(0);
+  const isMobile = useMediaQuery('(max-width:600px)');
 
   // Add this useEffect for fetching customers with correct dependencies
   useEffect(() => {
@@ -94,7 +96,12 @@ const Customers = () => {
     const { data, error } = await supabase
       .from('discount')
       .select('*');
-    if (!error) setDiscountOptions(data || []);
+    if (!error) {
+      console.log('Discount options fetched:', data); // Debug log
+      setDiscountOptions(data || []);
+    } else {
+      console.error('Error fetching discount options:', error);
+    }
   };
 
   const fetchTypeOptions = async () => {
@@ -198,146 +205,132 @@ const Customers = () => {
   };
 
   return (
-    <Box sx={{ position: 'relative', minHeight: '100vh', p: 0 }}>
-      <AnimatedBackground />
-      <Container maxWidth="lg" sx={{ py: 4, position: 'relative', zIndex: 2 }}>
-        <PageHeader
-          title="Customers"
-          actions={
-            <Stack direction="row" spacing={2}>
-              <Button
-                variant="outlined"
-                startIcon={<DownloadIcon />}
-                onClick={() => exportToCSV(customers, 'customers.csv')}
-                size="large"
+    <Box sx={{ minHeight: '100vh', p: { xs: 0, sm: 3 }, bgcolor: '#f7f9fb', width: '100%', overflow: 'hidden' }}>
+      <Box sx={{ py: { xs: 1, sm: 4 }, px: { xs: 1, sm: 2 }, width: '100%' }}>
+        {/* Simple Header */}
+        <Box sx={{ mb: 2, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: { xs: 'flex-start', sm: 'center' }, justifyContent: 'space-between', width: '100%' }}>
+          <Box sx={{ width: { xs: '100%', sm: 'auto' } }}>
+            <Typography variant="h5" sx={{ fontWeight: 600, color: '#22223b', mb: 0.5, fontSize: { xs: 20, sm: 24 } }}>
+              Customers
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Total: {totalCount}
+            </Typography>
+          </Box>
+          {/* Filters and Actions */}
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems="stretch" sx={{ mt: { xs: 2, sm: 0 }, width: { xs: '100%', sm: 'auto' } }}>
+            <TextField
+              label="Search by name"
+              variant="outlined"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              size="small"
+              sx={{ width: { xs: '100%', sm: 180 } }}
+              inputProps={{ style: { fontSize: 15 } }}
+            />
+            <FormControl sx={{ minWidth: { xs: '100%', sm: 120 }, width: { xs: '100%', sm: 120 } }} size="small">
+              <InputLabel>Barangay</InputLabel>
+              <Select
+                value={filterBarangay}
+                label="Barangay"
+                onChange={e => setFilterBarangay(e.target.value)}
               >
-                Export CSV
-              </Button>
-              <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleDialogOpen()} size="large">Add Customer</Button>
-            </Stack>
-          }
-        />
-        <Card elevation={3} sx={{ p: 0, overflow: 'visible', boxShadow: 'none', background: 'transparent' }}>
-          <CardContent sx={{ p: 0 }}>
-          <Paper elevation={1} sx={{ mb: 3, p: 2, borderRadius: 2, background: '#f9fafb' }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center" flexWrap="wrap">
-              <TextField
-                label="Search by name"
-                variant="outlined"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                size="small"
-                InputProps={{ startAdornment: <SearchIcon sx={{ mr: 1 }} /> }}
-                sx={{ width: 220 }}
-              />
-              <FormControl sx={{ minWidth: 160 }} size="small">
-                <InputLabel>Barangay</InputLabel>
-                <Select
-                  value={filterBarangay}
-                  label="Barangay"
-                  onChange={e => setFilterBarangay(e.target.value)}
-                >
-                  <MenuItem value="">All</MenuItem>
-                  {barangayOptions.map(b => <MenuItem key={b.barangay} value={b.barangay}>{b.barangay}</MenuItem>)}
-                </Select>
-              </FormControl>
-              <FormControl sx={{ minWidth: 160 }} size="small">
-                <InputLabel>Type</InputLabel>
-                <Select
-                  value={filterType}
-                  label="Type"
-                  onChange={e => setFilterType(e.target.value)}
-                >
-                  <MenuItem value="">All</MenuItem>
-                  {typeOptions.map(t => <MenuItem key={t.type} value={t.type}>{t.type}</MenuItem>)}
-                </Select>
-              </FormControl>
-              <FormControl sx={{ minWidth: 140 }} size="small">
-                <InputLabel>Sort</InputLabel>
-                <Select
-                  value={sortOption}
-                  label="Sort"
-                  onChange={e => setSortOption(e.target.value)}
-                >
-                  <MenuItem value="name_asc">Name A-Z</MenuItem>
-                  <MenuItem value="name_desc">Name Z-A</MenuItem>
-                </Select>
-              </FormControl>
-              <FilterListIcon sx={{ color: 'text.secondary', ml: 1 }} />
-            </Stack>
-          </Paper>
-            <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: '0 2px 8px rgba(30,58,138,0.04)', mb: 2 }}>
-              <Table sx={{ minWidth: 650 }} stickyHeader>
-              <TableHead>
-                <TableRow sx={{ background: '#f1f5f9' }}>
-                    <TableCell sx={{ fontWeight: 700, background: '#f1f5f9', color: 'primary.main' }}>Name</TableCell>
-                    <TableCell sx={{ fontWeight: 700, background: '#f1f5f9', color: 'primary.main' }}>Type</TableCell>
-                    <TableCell sx={{ fontWeight: 700, background: '#f1f5f9', color: 'primary.main' }}>Barangay</TableCell>
-                    <TableCell sx={{ fontWeight: 700, background: '#f1f5f9', color: 'primary.main' }}>Discount</TableCell>
-                    <TableCell sx={{ fontWeight: 700, background: '#f1f5f9', color: 'primary.main' }}>Remarks</TableCell>
-                    <TableCell sx={{ fontWeight: 700, background: '#f1f5f9', color: 'primary.main' }} align="right">Actions</TableCell>
+                <MenuItem value="">All</MenuItem>
+                {barangayOptions.map(b => <MenuItem key={b.barangay} value={b.barangay}>{b.barangay}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl sx={{ minWidth: { xs: '100%', sm: 120 }, width: { xs: '100%', sm: 120 } }} size="small">
+              <InputLabel>Type</InputLabel>
+              <Select
+                value={filterType}
+                label="Type"
+                onChange={e => setFilterType(e.target.value)}
+              >
+                <MenuItem value="">All</MenuItem>
+                {typeOptions.map(t => <MenuItem key={t.type} value={t.type}>{t.type}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <Button
+              variant="outlined"
+              startIcon={<DownloadIcon />}
+              onClick={() => exportToCSV(customers, 'customers.csv')}
+              sx={{ fontWeight: 500, borderRadius: 2, minWidth: 44, width: { xs: '100%', sm: 'auto' } }}
+            >
+              Export
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => handleDialogOpen()}
+              sx={{ fontWeight: 500, borderRadius: 2, minWidth: 44, width: { xs: '100%', sm: 'auto' } }}
+            >
+              Add
+            </Button>
+          </Stack>
+        </Box>
+        {/* Table Section */}
+        <Paper elevation={0} sx={{ borderRadius: 2, boxShadow: 'none', width: '100%', mb: 2 }}>
+          <Table sx={{ width: '100%', fontSize: { xs: 12, sm: 15 } }} size={isMobile ? 'small' : 'medium'}>
+            <TableHead>
+              <TableRow sx={{ background: '#f1f3f6' }}>
+                <TableCell sx={{ fontWeight: 700, color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 } }}>ID</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 } }}>Name</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 } }}>Type</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 } }}>Barangay</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 }, display: { xs: 'none', md: 'table-cell' } }}>Discount</TableCell>
+                <TableCell sx={{ fontWeight: 700, color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 }, display: { xs: 'none', lg: 'table-cell' } }}>Remarks</TableCell>
+                <TableCell align="right" sx={{ fontWeight: 700, color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 } }}>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {loading ? (
+                Array.from({ length: rowsPerPage }).map((_, i) => (
+                  <TableRow key={i} sx={{ background: i % 2 === 0 ? '#fff' : '#f7f9fb' }}>
+                    <TableCell sx={{ px: { xs: 1, sm: 2 } }}><Skeleton variant="text" width={40} /></TableCell>
+                    <TableCell sx={{ px: { xs: 1, sm: 2 } }}><Skeleton variant="text" width={60} /></TableCell>
+                    <TableCell sx={{ px: { xs: 1, sm: 2 } }}><Skeleton variant="text" width={40} /></TableCell>
+                    <TableCell sx={{ px: { xs: 1, sm: 2 } }}><Skeleton variant="text" width={50} /></TableCell>
+                    <TableCell sx={{ px: { xs: 1, sm: 2 }, display: { xs: 'none', md: 'table-cell' } }}><Skeleton variant="text" width={40} /></TableCell>
+                    <TableCell sx={{ px: { xs: 1, sm: 2 }, display: { xs: 'none', lg: 'table-cell' } }}><Skeleton variant="text" width={60} /></TableCell>
+                    <TableCell align="right" sx={{ px: { xs: 1, sm: 2 } }}><Skeleton variant="text" width={40} /></TableCell>
+                  </TableRow>
+                ))
+              ) : customers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} align="center" sx={{ py: 6, color: 'text.secondary', fontSize: { xs: 13, sm: 15 } }}>
+                    <Typography variant="h6" sx={{ fontWeight: 500, mb: 1, fontSize: { xs: 15, sm: 18 } }}>
+                      No customers found
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Try adjusting your search or filters.
+                    </Typography>
+                  </TableCell>
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                  {loading ? (
-                    Array.from({ length: 5 }).map((_, i) => (
-                      <TableRow key={i}>
-                        <TableCell><Skeleton variant="text" width={120} /></TableCell>
-                        <TableCell><Skeleton variant="text" width={80} /></TableCell>
-                        <TableCell><Skeleton variant="text" width={80} /></TableCell>
-                        <TableCell><Skeleton variant="text" width={60} /></TableCell>
-                        <TableCell><Skeleton variant="text" width={100} /></TableCell>
-                        <TableCell align="right"><Skeleton variant="circular" width={32} height={32} /></TableCell>
-                      </TableRow>
-                    ))
-                  ) : customers.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', color: 'text.secondary' }}>
-                          <EmptyIcon sx={{ fontSize: 48, mb: 1 }} />
-                          <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
-                            No customers found
-                          </Typography>
-                          <Typography variant="body2">Try adjusting your search or filters.</Typography>
-                        </Box>
-                    </TableCell>
-                    </TableRow>
-                  ) : (
-                    customers.map((c, i) => (
-                      <TableRow
-                        key={c.customerid}
-                        hover
-                        sx={{
-                          backgroundColor: i % 2 === 0 ? '#f8fafc' : '#e0f2fe',
-                          transition: 'background 0.2s',
-                          '&:hover': {
-                            backgroundColor: '#bae6fd',
-                          },
-                        }}
-                      >
-                        <TableCell>{c.name}</TableCell>
-                        <TableCell>{c.type}</TableCell>
-                        <TableCell>{c.barangay}</TableCell>
-                        <TableCell>{c.discount}</TableCell>
-                        <TableCell>{c.remarks}</TableCell>
-                    <TableCell align="right">
-                      <Tooltip title="Edit">
-                            <IconButton onClick={() => handleDialogOpen(c)} size="small" color="primary">
-                              <EditIcon />
-                            </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Delete">
-                            <IconButton onClick={() => handleDeleteClick(c.customerid)} size="small" color="error">
-                              <DeleteIcon />
-                            </IconButton>
-                      </Tooltip>
+              ) : (
+                customers.map((customer, index) => (
+                  <TableRow
+                    key={customer.customerid}
+                    sx={{ background: index % 2 === 0 ? '#fff' : '#f7f9fb', transition: 'none' }}
+                  >
+                    <TableCell sx={{ color: '#22223b', fontWeight: 500, fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 } }}>{customer.customerid}</TableCell>
+                    <TableCell sx={{ color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 } }}>{customer.name}</TableCell>
+                    <TableCell sx={{ color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 } }}>{customer.type}</TableCell>
+                    <TableCell sx={{ color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 } }}>{customer.barangay}</TableCell>
+                    <TableCell sx={{ color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 }, display: { xs: 'none', md: 'table-cell' } }}>{customer.discount}</TableCell>
+                    <TableCell sx={{ color: '#22223b', fontSize: { xs: 13, sm: 15 }, px: { xs: 1, sm: 2 }, display: { xs: 'none', lg: 'table-cell' } }}>{customer.remarks}</TableCell>
+                    <TableCell align="right" sx={{ px: { xs: 1, sm: 2 } }}>
+                      <IconButton color="primary" onClick={() => handleDialogOpen(customer)} size="small">
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton color="error" onClick={() => handleDeleteClick(customer.customerid)} size="small">
+                        <DeleteIcon />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
-                    ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                ))
+              )}
+            </TableBody>
+          </Table>
           <TablePagination
             component="div"
             count={totalCount}
@@ -345,61 +338,104 @@ const Customers = () => {
             onPageChange={handleChangePage}
             rowsPerPage={rowsPerPage}
             onRowsPerPageChange={handleChangeRowsPerPage}
-            rowsPerPageOptions={[5, 10, 25, 50]}
+            rowsPerPageOptions={[10, 25, 50]}
+            sx={{ background: '#f7f9fb', borderTop: '1px solid #e5e7eb', '.MuiTablePagination-toolbar': { px: { xs: 1, sm: 2 } }, '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': { fontWeight: 500, color: '#374151', fontSize: { xs: 13, sm: 15 } } }}
           />
-        </CardContent>
-      </Card>
-      </Container>
-      <Dialog open={openDialog} onClose={handleDialogClose} maxWidth="xs" fullWidth>
-        <DialogTitle>{editId ? 'Edit Customer' : 'Add Customer'}</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-          <TextField label="Name" name="name" value={form.name} onChange={handleFormChange} required />
-          <FormControl>
-            <InputLabel>Type</InputLabel>
-            <Select name="type" value={form.type} label="Type" onChange={handleFormChange} required>
-              {typeOptions.map(t => <MenuItem key={t.type} value={t.type}>{t.type}</MenuItem>)}
-            </Select>
-          </FormControl>
-          <FormControl>
-            <InputLabel>Barangay</InputLabel>
-            <Select name="barangay" value={form.barangay} label="Barangay" onChange={handleFormChange} required>
-              {barangayOptions.map(b => <MenuItem key={b.barangay} value={b.barangay}>{b.barangay}</MenuItem>)}
-            </Select>
-          </FormControl>
-          <FormControl>
-            <InputLabel>Discount</InputLabel>
-            <Select
-              name="discount"
-              value={form.discount}
-              label="Discount"
+        </Paper>
+      </Box>
+      {/* Dialog for Add/Edit */}
+      <Dialog open={openDialog} onClose={handleDialogClose} maxWidth="xs" fullWidth fullScreen={isMobile}
+        PaperProps={{ sx: { borderRadius: isMobile ? 0 : 2, bgcolor: '#fff', minHeight: isMobile ? '100vh' : 'auto', width: '100vw', m: 0 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 600, fontSize: { xs: 18, sm: 20 }, color: '#22223b', pb: 1, px: { xs: 2, sm: 3 } }}>
+          {editId ? 'Edit Customer' : 'Add Customer'}
+        </DialogTitle>
+        <DialogContent sx={{ p: { xs: 2, sm: 3 } }}>
+          <Stack spacing={2}>
+            <TextField
+              label="Customer Name"
+              name="name"
+              value={form.name}
               onChange={handleFormChange}
+              fullWidth
               required
-            >
-              {discountOptions.map(opt => (
-                <MenuItem key={opt.type} value={opt.discountpercentage}>
-                  {opt.type} ({opt.discountpercentage}%)
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <TextField label="Remarks" name="remarks" value={form.remarks} onChange={handleFormChange} multiline rows={2} />
+              placeholder="Enter full name..."
+              inputProps={{ style: { fontSize: 15 } }}
+            />
+            <FormControl fullWidth>
+              <InputLabel>Type</InputLabel>
+              <Select
+                name="type"
+                value={form.type}
+                label="Type"
+                onChange={handleFormChange}
+              >
+                {typeOptions.map(t => <MenuItem key={t.type} value={t.type}>{t.type}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel>Barangay</InputLabel>
+              <Select
+                name="barangay"
+                value={form.barangay}
+                label="Barangay"
+                onChange={handleFormChange}
+              >
+                {barangayOptions.map(b => <MenuItem key={b.barangay} value={b.barangay}>{b.barangay}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel>Discount</InputLabel>
+              <Select
+                name="discount"
+                value={form.discount}
+                label="Discount"
+                onChange={handleFormChange}
+              >
+                <MenuItem value="">None</MenuItem>
+                {discountOptions.map((d, index) => (
+                  <MenuItem key={index} value={d.discountpercentage || d.discount || d.type || d.id}>
+                    {d.type ? `${d.type} (${d.discountpercentage || d.discount || 0}%)` : d.discountpercentage ? `${d.discountpercentage}%` : d.discount || 'Discount Option'}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <TextField
+              label="Remarks"
+              name="remarks"
+              value={form.remarks}
+              onChange={handleFormChange}
+              fullWidth
+              multiline
+              minRows={2}
+              maxRows={4}
+              placeholder="Additional notes or remarks..."
+              inputProps={{ style: { fontSize: 15 } }}
+            />
+          </Stack>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDialogClose}>Cancel</Button>
-          <Button onClick={handleAddOrEdit} variant="contained">{editId ? 'Update' : 'Add'}</Button>
+        <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: 2 }}>
+          <Button onClick={handleDialogClose} variant="outlined" sx={{ borderRadius: 2, minWidth: 100, width: { xs: '100%', sm: 'auto' } }}>
+            Cancel
+          </Button>
+          <Button onClick={handleAddOrEdit} variant="contained" sx={{ borderRadius: 2, minWidth: 120, width: { xs: '100%', sm: 'auto' } }}>
+            {editId ? 'Save Changes' : 'Add Customer'}
+          </Button>
         </DialogActions>
       </Dialog>
-      <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel}>
-        <DialogTitle>Confirm Delete</DialogTitle>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={handleDeleteCancel} fullScreen={isMobile}
+        PaperProps={{ sx: { borderRadius: isMobile ? 0 : 2, bgcolor: '#fff', width: '100vw', m: 0 } }}
+      >
+        <DialogTitle sx={{ fontWeight: 600, fontSize: { xs: 16, sm: 18 } }}>Confirm Delete</DialogTitle>
         <DialogContent>
-          <Typography>Are you sure you want to delete this customer?</Typography>
+          <Typography sx={{ fontSize: { xs: 14, sm: 15 } }}>Are you sure you want to delete this customer?</Typography>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDeleteCancel}>Cancel</Button>
-          <Button onClick={handleDeleteConfirm} color="error" variant="contained">Delete</Button>
+        <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: 2 }}>
+          <Button onClick={handleDeleteCancel} sx={{ minHeight: 44, fontSize: { xs: 14, sm: 15 }, width: { xs: '100%', sm: 'auto' } }}>Cancel</Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained" sx={{ minHeight: 44, fontSize: { xs: 14, sm: 15 }, width: { xs: '100%', sm: 'auto' } }}>Delete</Button>
         </DialogActions>
       </Dialog>
-      {/* Remove local Snackbar/Alert, global snackbar will handle alerts */}
     </Box>
   );
 };
